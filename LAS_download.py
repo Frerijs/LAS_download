@@ -73,6 +73,9 @@ try:
                     matched_polygons = 0  # Skaitīt pārklājušos poligonus
                     links = []  # Saglabāt saites
 
+                    # Progresjoslas izveide
+                    progress_bar = st.progress(0)
+
                     for index, row in gdf.iterrows():
                         if 'link' in row and row['link']:  # Pārbaudīt, vai ir "link" atribūts
                             polygon = row.geometry
@@ -82,11 +85,14 @@ try:
                                 link = row['link']
                                 links.append(link)  # Saglabāt saiti sarakstā
                                 st.write(f"Atrasta saite: {link}")
+                            
+                            # Atjauno progresjoslu
+                            progress_percentage = (index + 1) / total_polygons
+                            progress_bar.progress(progress_percentage)
 
                     if matched_polygons == 0:
                         st.warning("Neviens poligons nepārklājās ar kontūras failu.")
                     else:
-                        # Ja nepieciešams paslēpt saišu sarakstu, tad izlaid šo rindiņu
                         st.success(f"Atrasti {matched_polygons} poligoni, kas pārklājas.")
                 except Exception as e:
                     st.error(f"Kļūda, ielādējot kontūras SHP failu: {e}")
