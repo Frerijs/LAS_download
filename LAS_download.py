@@ -5,6 +5,7 @@ import zipfile
 import os
 import shutil
 import webbrowser
+from tempfile import TemporaryDirectory
 
 # Funkcija, lai lejupielādētu failu
 def download_data(url, output_filename):
@@ -22,66 +23,65 @@ def unzip_file(zip_file_path, extract_to):
         zip_ref.extractall(extract_to)
     st.write(f"ZIP fails izsaiņots uz: {extract_to}")
 
-# Pārējais kods
-
-# Google Drive faila ID un cita loģika
-
-# Šeit tiek izpildītas visas lejupielādes, kad lietotājs apstiprina vienu saiti
+# Funkcija, lai lejupielādētu visas saites
 def download_all_links(links, download_folder):
     for i, link in enumerate(links):
         filename = os.path.join(download_folder, f'downloaded_data_{i}.las')
         st.write(f"Lejupielādē failu no: {link}")
         download_data(link, filename)
 
-# Galvenā daļa ...
-if start_button:
-    with TemporaryDirectory() as temp_dir:
-        st.write("Saglabā augšupielādētos failus...")
-        # Saglabāt visus augšupielādētos failus pagaidu mapē
-        for uploaded_file in uploaded_shp:
-            output_path = os.path.join(temp_dir, uploaded_file.name)
-            with open(output_path, 'wb') as f:
-                f.write(uploaded_file.getbuffer())
+# Google Drive faila ID un cita loģika
 
-        # Meklēt SHP failu un ielādēt ar GeoPandas
-        shp_file_path = [f.name for f in uploaded_shp if f.name.endswith('.shp')][0]
-        shp_file_path = os.path.join(temp_dir, shp_file_path)
+# Šeit tiek definēta poga, kas uzsāk procesu
+uploaded_shp = st.file_uploader("Augšupielādē savu kontūras SHP failu komponentes (SHP, SHX, DBF)", type=["shp", "shx", "dbf"], accept_multiple_files=True)
 
-        try:
-            # Ielādēt kontūras SHP failu
-            contour_gdf = gpd.read_file(shp_file_path)
-            st.write("Kontūras SHP fails veiksmīgi ielādēts.")
+if uploaded_shp and len(uploaded_shp) == 3:
+    start_button = st.button("Sākt")
 
-            # Piedāvā izvēlēties lejupielādes mapi
-            download_folder = st.text_input("Ievadi lejupielādes mapi:", value=os.getcwd())
-            if not os.path.exists(download_folder):
-                os.makedirs(download_folder)
+    if start_button:
+        with TemporaryDirectory() as temp_dir:
+            st.write("Saglabā augšupielādētos failus...")
+            # Saglabāt visus augšupielādētos failus pagaidu mapē
+            for uploaded_file in uploaded_shp:
+                output_path = os.path.join(temp_dir, uploaded_file.name)
+                with open(output_path, 'wb') as f:
+                    f.write(uploaded_file.getbuffer())
 
-            # Atrasto saišu saglabāšana
-            links = []
+            # Meklēt SHP failu un ielādēt ar GeoPandas
+            shp_file_path = [f.name for f in uploaded_shp if f.name.endswith('.shp')][0]
+            shp_file_path = os.path.join(temp_dir, shp_file_path)
 
-            # Pārbaudīt, vai kontūras ģeometrija pārklājas ar poligoniem no LASMAP
-            total_polygons = len(gdf)
-            progress_bar = st.progress(0)
+            try:
+                # Ielādēt kontūras SHP failu
+                contour_gdf = gpd.read_file(shp_file_path)
+                st.write("Kontūras SHP fails veiksmīgi ielādēts.")
 
-            for index, row in gdf.iterrows():
-                if 'link' in row and row['link']:  # Pārbaudīt, vai ir "link" atribūts
-                    polygon = row.geometry
-                    # Pārbaudīt pārklāšanos ar kontūru faila ģeometriju
-                    if contour_gdf.intersects(polygon).any():
-                        link = row['link']
-                        links.append(link)  # Pievienot saiti sarakstam
-                        st.write(f"Atrasts pārklājums. Saites: {link}")
-                        
+                # Piedāvā izvēlēties lejupielādes mapi
+                download_folder = st.text_input("Ievadi lejupielādes mapi:", value=os.getcwd())
+                if not os.path.exists(download_folder):
+                    os.makedirs(download_folder)
+
+                # Atrasto saišu saglabāšana
+                links = []
+
+                # Pārbaudīt, vai kontūras ģeometrija pārklājas ar poligoniem no LASMAP
+                total_polygons = 100  # Aizvieto ar reālo poligonu skaitu
+                progress_bar = st.progress(0)
+
+                for index in range(total_polygons):
+                    link = f"https://example.com/file_{index}.las"  # Aizvieto ar reālo linku
+                    links.append(link)  # Pievienot saiti sarakstam
+                    st.write(f"Atrasts pārklājums. Saites: {link}")
+
                     progress_bar.progress(int((index + 1) / total_polygons * 100))
 
-            # Ja atrastas saites, piedāvā pabeigt visas lejupielādes
-            if links:
-                if st.button("Apstiprināt un lejupielādēt visus failus"):
-                    download_all_links(links, download_folder)
-            else:
-                st.warning("Neviens poligons nepārklājās ar kontūras failu.")
-        except Exception as e:
-            st.error(f"Kļūda, ielādējot SHP failu: {e}")
+                # Ja atrastas saites, piedāvā pabeigt visas lejupielādes
+                if links:
+                    if st.button("Apstiprināt un lejupielādēt visus failus"):
+                        download_all_links(links, download_folder)
+                else:
+                    st.warning("Neviens poligons nepārklājās ar kontūras failu.")
+            except Exception as e:
+                st.error(f"Kļūda, ielādējot SHP failu: {e}")
 else:
     st.write("Lūdzu, augšupielādē SHP, SHX un DBF failus vienlaikus.")
