@@ -15,14 +15,11 @@ def download_from_google_drive(file_id, output_filename):
         st.error(f"Kļūda lejupielādējot failu: {e}")
 
 # Funkcija, lai izveidotu *.bat failu ar atrastajām saitēm
-def create_bat_file(links, bat_filepath):
-    try:
-        with open(bat_filepath, 'w') as bat_file:
-            for link in links:
-                bat_file.write(f'start {link}\n')
-        st.success(f"BAT fails '{bat_filepath}' veiksmīgi izveidots!")
-    except Exception as e:
-        st.error(f"Kļūda, veidojot BAT failu: {e}")
+def create_bat_file(links):
+    bat_content = ""
+    for link in links:
+        bat_content += f'start {link}\n'
+    return bat_content
 
 # Google Drive faila ID un ZIP faila atrašanās vieta
 file_id = "1Xo7gVZ2WOm6yWv6o0-jCs_OsVQZQdffQ"  # Pārliecinies, ka šis ID ir pareizs
@@ -105,10 +102,9 @@ try:
                     else:
                         st.success(f"Atrasti {matched_polygons} poligoni, kas pārklājas.")
                         
-                        # Ļaut lietotājam norādīt ceļu BAT failam
-                        bat_filename = st.text_input("Ievadi ceļu BAT faila saglabāšanai:", value="open_links.bat")
-                        if st.button("Izveidot BAT failu"):
-                            create_bat_file(links, bat_filename)
+                        # Izveidot BAT failu un piedāvāt to lejupielādei
+                        bat_content = create_bat_file(links)
+                        st.download_button(label="Lejupielādēt BAT failu", data=bat_content, file_name="open_links.bat", mime="application/octet-stream")
                         
                 except Exception as e:
                     st.error(f"Kļūda, ielādējot kontūras SHP failu: {e}")
