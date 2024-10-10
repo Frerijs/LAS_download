@@ -1,3 +1,5 @@
 streamlit
 geopandas
 requests
+zipfile36
+tkinter
