@@ -18,7 +18,7 @@ def download_from_google_drive(file_id, output_filename):
 def display_links(links):
     if links:
         for link in links:
-            st.markdown(f"[{link}]({link})")
+            st.write(f"Atrasta saite: {link}")
     else:
         st.warning("Netika atrasta neviena saite.")
 
@@ -94,8 +94,6 @@ try:
                     if matched_polygons == 0:
                         st.warning("Neviens poligons nepārklājās ar kontūras failu.")
                     else:
-                        st.write("Atrasto saišu saraksts:")
-                        display_links(links)  # Rāda tikai vienreiz
                         st.success(f"Atrasti {matched_polygons} poligoni, kas pārklājas.")
                 except Exception as e:
                     st.error(f"Kļūda, ielādējot kontūras SHP failu: {e}")
