@@ -34,7 +34,7 @@ def download_zip_from_github(url):
         return None
 
 # Norādi saiti uz GitHub failu
-github_url = "https://github.com/Frerjs/LAS_download/raw/main/LASMAP.zip"
+!wget https://github.com/Frerjs/LAS_download/raw/main/LASMAP.zip -O LASMAP.zip
 
 st.title("LAS failu lejupielāde no GitHub un pārklājuma noteikšana")
 
