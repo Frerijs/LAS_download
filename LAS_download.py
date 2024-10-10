@@ -42,6 +42,11 @@ def download_data(url, output_filename):
     else:
         return "Lejuplāde neizdevās."
 
+# Funkcija, lai atvērtu visus saistītos linkus pārlūkprogrammā
+def open_all_links(links):
+    for link in links:
+        webbrowser.open(link)
+
 # Google Drive faila ID
 file_id = "1Xo7gVZ2WOm6yWv6o0-jCs_OsVQZQdffQ"
 output_zip_path = "LASMAP.zip"
@@ -105,6 +110,8 @@ if download_zip_from_google_drive(file_id, output_zip_path):
                     total_polygons = len(gdf)
                     matched_polygons = 0  # Skaitīt pārklājušos poligonus
 
+                    links = []  # Saglabāt visas saites sarakstā
+
                     for index, row in gdf.iterrows():
                         if 'link' in row and row['link']:  # Pārbaudīt, vai ir "link" atribūts
                             polygon = row.geometry
@@ -112,19 +119,19 @@ if download_zip_from_google_drive(file_id, output_zip_path):
                             if contour_gdf.intersects(polygon).any():
                                 matched_polygons += 1
                                 link = row['link']
-                                filename = os.path.join(download_folder, f'downloaded_data_{index}.zip')
+                                links.append(link)  # Saglabā visas saites sarakstā
                                 st.write(f"Lejupielādē failu no: {link}")
-                                result = download_data(link, filename)
+                                result = download_data(link, os.path.join(download_folder, f'downloaded_data_{index}.zip'))
                                 st.write(result)
                                 
-                                # Automātiski atvērt linku tīmekļa pārlūkā
-                                webbrowser.open(link)
-                        
                             progress_bar.progress(min(int((index + 1) / total_polygons * 100), 100))
 
                     if matched_polygons == 0:
                         st.warning("Neviens poligons nepārklājās ar kontūras failu.")
                     else:
+                        # Poga, lai atvērtu visas saites
+                        if st.button("Atvērt visus atrastos linkus pārlūkā"):
+                            open_all_links(links)
                         st.success(f"Lejupielādes process pabeigts. Pārklājās {matched_polygons} poligoni.")
                 except Exception as e:
                     st.error(f"Kļūda, ielādējot SHP failu: {e}")
