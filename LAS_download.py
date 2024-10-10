@@ -10,13 +10,17 @@ def download_from_google_drive(file_id, output_filename):
     download_url = f"https://drive.google.com/uc?id={file_id}"
     gdown.download(download_url, output_filename, quiet=False)
 
-# Funkcija, lai parādītu saites kā klikšķināmas
-def display_links(links):
-    for link in links:
+# Funkcija, lai parādītu saites kā klikšķināmas ar atsevišķu progresu katrai
+def display_links_with_progress(links):
+    for i, link in enumerate(links):
+        progress_bar = st.progress(0)
         st.markdown(f"[Klikšķini šeit, lai atvērtu saiti]({link})")
+        # Progresa simulācija katrai saitei
+        for progress in range(100):
+            progress_bar.progress(progress + 1)
 
 # Google Drive faila ID
-file_id = "1Xo7gVZ2WOm6yWv6o0-jCs_OsVQZQdffQ"  # Aizstāj ar īsto faila ID
+file_id = "1Xo7gVZ2WOm6yWv6o0-jCs_OsVQZQdffQ"
 output_zip_path = "LASMAP.zip"
 
 # Lejupielādē ZIP failu no Google Drive
@@ -68,7 +72,6 @@ try:
                     st.write("Kontūras SHP fails veiksmīgi ielādēts.")
 
                     # Pārbaudīt, vai kontūras ģeometrija pārklājas ar poligoniem no LASMAP
-                    progress_bar = st.progress(0)
                     total_polygons = len(gdf)
                     matched_polygons = 0  # Skaitīt pārklājušos poligonus
                     links = []  # Saglabāt saites
@@ -82,15 +85,13 @@ try:
                                 link = row['link']
                                 links.append(link)  # Saglabāt saiti sarakstā
                                 st.write(f"Atrasta saite: {link}")
-                                
-                            progress_bar.progress(min(int((index + 1) / total_polygons * 100), 100))
 
                     if matched_polygons == 0:
                         st.warning("Neviens poligons nepārklājās ar kontūras failu.")
                     else:
-                        # Parādīt visas saites kā klikšķināmas
-                        st.write("Atrasto saišu saraksts:")
-                        display_links(links)
+                        # Parādīt visas saites ar atsevišķiem progresbāriem
+                        st.write("Atrasto saišu saraksts ar progresbāriem:")
+                        display_links_with_progress(links)
                         st.success(f"Atrasti {matched_polygons} poligoni, kas pārklājas.")
                 except Exception as e:
                     st.error(f"Kļūda, ielādējot SHP failu: {e}")
