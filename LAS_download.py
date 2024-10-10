@@ -5,6 +5,7 @@ import zipfile
 import os
 import shutil
 import webbrowser
+from tempfile import TemporaryDirectory
 
 # Funkcija, lai lejupielādētu ZIP failu no Google Drive
 def download_zip_from_google_drive(file_id, output_filename):
@@ -12,8 +13,15 @@ def download_zip_from_google_drive(file_id, output_filename):
     response = requests.get(download_url, stream=True)
     if response.status_code == 200:
         with open(output_filename, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=128):
-                f.write(chunk)
+            total_length = int(response.headers.get('content-length', 0))
+            progress_bar = st.progress(0)
+            downloaded = 0
+
+            for chunk in response.iter_content(chunk_size=1024):
+                if chunk:
+                    f.write(chunk)
+                    downloaded += len(chunk)
+                    progress_bar.progress(int(downloaded / total_length * 100))
         return True
     else:
         st.error(f"Neizdevās lejupielādēt ZIP failu no Google Drive. Statusa kods: {response.status_code}")
@@ -61,35 +69,46 @@ if download_zip_from_google_drive(file_id, output_zip_path):
     uploaded_shp = st.file_uploader("Augšupielādē savu kontūras SHP failu (SHP, SHX, DBF)", type=["shp", "shx", "dbf"])
 
     if uploaded_shp:
-        with TemporaryDirectory() as temp_dir:
-            # Saglabāt augšupielādēto SHP failu pagaidu mapē
-            shp_file_path = os.path.join(temp_dir, uploaded_shp.name)
-            with open(shp_file_path, 'wb') as f:
-                f.write(uploaded_shp.getbuffer())
+        start_button = st.button("Sākt")
 
-            # Ielādēt kontūras SHP failu
-            contour_gdf = gpd.read_file(shp_file_path)
+        if start_button:
+            # Izveido pagaidu direktoriju augšupielādētajam failam
+            with TemporaryDirectory() as temp_dir:
+                # Saglabāt augšupielādēto SHP failu pagaidu mapē
+                shp_file_path = os.path.join(temp_dir, uploaded_shp.name)
+                with open(shp_file_path, 'wb') as f:
+                    f.write(uploaded_shp.getbuffer())
 
-            # Piedāvā izvēlēties lejupielādes mapi
-            download_folder = st.text_input("Lejupielādes mape", value=os.getcwd())
+                # Ielādēt kontūras SHP failu
+                contour_gdf = gpd.read_file(shp_file_path)
 
-            # Pārbaudīt, vai kontūras ģeometrija pārklājas ar poligoniem no LASMAP
-            for index, row in gdf.iterrows():
-                if 'link' in row and row['link']:  # Pārbaudīt, vai ir "link" atribūts
-                    polygon = row.geometry
-                    # Pārbaudīt pārklāšanos ar kontūru faila ģeometriju
-                    if contour_gdf.intersects(polygon).any():
-                        link = row['link']
-                        filename = os.path.join(download_folder, f'downloaded_data_{index}.zip')
-                        st.write(f"Lejupielādē failu no: {link}")
-                        result = download_data(link, filename)
-                        st.write(result)
-                        
-                        # Automātiski atvērt linku tīmekļa pārlūkā
-                        webbrowser.open(link)
-                    else:
-                        st.write(f"Poligons {index} nepārklājas ar kontūras failu.")
-            st.success("Lejupielādes process pabeigts.")
+                # Piedāvā izvēlēties lejupielādes mapi
+                download_folder = st.text_input("Lejupielādes mape", value=os.getcwd())
+
+                # Pārbaudīt, vai kontūras ģeometrija pārklājas ar poligoniem no LASMAP
+                progress_bar = st.progress(0)
+                total_polygons = len(gdf)
+
+                for index, row in gdf.iterrows():
+                    if 'link' in row and row['link']:  # Pārbaudīt, vai ir "link" atribūts
+                        polygon = row.geometry
+                        # Pārbaudīt pārklāšanos ar kontūru faila ģeometriju
+                        if contour_gdf.intersects(polygon).any():
+                            link = row['link']
+                            filename = os.path.join(download_folder, f'downloaded_data_{index}.zip')
+                            st.write(f"Lejupielādē failu no: {link}")
+                            result = download_data(link, filename)
+                            st.write(result)
+                            
+                            # Automātiski atvērt linku tīmekļa pārlūkā
+                            webbrowser.open(link)
+                        else:
+                            st.write(f"Poligons {index} nepārklājas ar kontūras failu.")
+                    
+                    # Atjaunināt progresu
+                    progress_bar.progress(int((index + 1) / total_polygons * 100))
+
+                st.success("Lejupielādes process pabeigts.")
     else:
         st.write("Lūdzu, augšupielādē kontūras SHP failu.")
 else:
