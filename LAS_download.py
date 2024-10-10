@@ -40,7 +40,7 @@ def download_data(url, output_filename):
             file.write(response.content)
         return f"Fails '{output_filename}' veiksmīgi lejuplādēts."
     else:
-        return "Lejupielāde neizdevās."
+        return "Lejuplāde neizdevās."
 
 # Google Drive faila ID
 file_id = "1Xo7gVZ2WOm6yWv6o0-jCs_OsVQZQdffQ"
@@ -95,8 +95,8 @@ if download_zip_from_google_drive(file_id, output_zip_path):
                     contour_gdf = gpd.read_file(shp_file_path)
                     st.write("Kontūras SHP fails veiksmīgi ielādēts.")
 
-                    # Piedāvā izvēlēties lejupielādes mapi
-                    download_folder = st.text_input("Izvēlies lejupielādes mapi:", value=os.getcwd())
+                    # Piedāvā izvēlēties lejupielādes mapi ar manuālu ceļa ievadīšanu
+                    download_folder = st.text_input("Ievadi lejupielādes mapi:", value=os.getcwd())
                     if not os.path.exists(download_folder):
                         os.makedirs(download_folder)
 
