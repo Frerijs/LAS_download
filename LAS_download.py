@@ -1,21 +1,27 @@
 import gdown
-import zipfile
 import os
 
-# Google Drive faila ID
-file_id = "FAILE_ID_NO_GOOGLE_DRIVE"
+# Funkcija, lai lejupielādētu failu no Google Drive
+def download_file_from_google_drive(file_id, output_path):
+    download_url = f"https://drive.google.com/uc?id={file_id}"
+    gdown.download(download_url, output_path, quiet=False)
 
-# Izveido tiešsaistes lejupielādes URL
-download_url = f"https://drive.google.com/uc?id={file_id}"
+# Lejupielādē katru no SHP komponentēm
+file_ids = {
+    "LASMAP.shp": "ID_FOR_SHP_FILE",
+    "LASMAP.dbf": "ID_FOR_DBF_FILE",
+    "LASMAP.shx": "ID_FOR_SHX_FILE",
+    "LASMAP.prj": "ID_FOR_PRJ_FILE",
+    "LASMAP.cpg": "ID_FOR_CPG_FILE"
+}
 
-# Norādi, kur saglabāt lejupielādēto failu
-output_path = "LASMAP.zip"
+# Izveido direktoriju failu saglabāšanai
+output_dir = "LASMAP_files"
+os.makedirs(output_dir, exist_ok=True)
 
-# Lejupielādē ZIP failu no Google Drive
-gdown.download(download_url, output_path, quiet=False)
+# Lejupielādēt visus failus
+for filename, file_id in file_ids.items():
+    output_path = os.path.join(output_dir, filename)
+    download_file_from_google_drive(file_id, output_path)
 
-# Izsaiņot ZIP failu
-with zipfile.ZipFile(output_path, 'r') as zip_ref:
-    zip_ref.extractall("extracted_files")
-
-print("ZIP fails veiksmīgi izsaiņots!")
+print("Visi faili veiksmīgi lejupielādēti!")
