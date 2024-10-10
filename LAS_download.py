@@ -4,7 +4,6 @@ import requests
 import zipfile
 import os
 import shutil
-import webbrowser
 from tempfile import TemporaryDirectory
 
 # Funkcija, lai lejupielādētu ZIP failu no Google Drive
@@ -48,6 +47,16 @@ def save_as_zip(file_paths, output_zip_path):
         for file in file_paths:
             zipf.write(file, os.path.basename(file))
     return output_zip_path
+
+# Funkcija, lai ģenerētu lejupielādes pogu ZIP failam
+def download_zip(zip_output_path):
+    with open(zip_output_path, "rb") as f:
+        st.download_button(
+            label="Lejupielādēt visus failus ZIP arhīvā",
+            data=f,
+            file_name=os.path.basename(zip_output_path),
+            mime="application/zip"
+        )
 
 # Google Drive faila ID
 file_id = "1Xo7gVZ2WOm6yWv6o0-jCs_OsVQZQdffQ"
@@ -133,11 +142,12 @@ if download_zip_from_google_drive(file_id, output_zip_path):
                         st.warning("Neviens poligons nepārklājās ar kontūras failu.")
                     else:
                         # Saglabāt visus failus ZIP arhīvā
-                        zip_output_path = os.path.join(download_folder, 'all_downloads.zip')
+                        zip_output_path = os.path.join(temp_dir, 'all_downloads.zip')
                         zip_result = save_as_zip(file_paths, zip_output_path)
+
+                        # Ģenerē lejupielādes pogu ZIP failam
+                        download_zip(zip_result)
                         st.success(f"Lejupielādes process pabeigts. Pārklājās {matched_polygons} poligoni.")
-                        # Nodrošināt saiti uz ZIP failu
-                        st.write(f"[Lejupielādēt visus failus ZIP arhīvā]({zip_output_path})")
                 except Exception as e:
                     st.error(f"Kļūda, ielādējot SHP failu: {e}")
     else:
