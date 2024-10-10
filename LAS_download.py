@@ -7,43 +7,53 @@ from tempfile import TemporaryDirectory
 
 # Funkcija, lai lejupielādētu failu no Google Drive, izmantojot gdown
 def download_from_google_drive(file_id, output_filename):
-    download_url = f"https://drive.google.com/uc?id={file_id}"
-    gdown.download(download_url, output_filename, quiet=False)
+    try:
+        download_url = f"https://drive.google.com/uc?id={file_id}"
+        gdown.download(download_url, output_filename, quiet=False)
+        st.success(f"Fails veiksmīgi lejupielādēts: {output_filename}")
+    except Exception as e:
+        st.error(f"Kļūda lejupielādējot failu: {e}")
 
 # Funkcija, lai parādītu saites kā klikšķināmas
 def display_links(links):
-    for link in links:
-        st.markdown(f"[Klikšķini šeit, lai atvērtu saiti]({link})")
+    if links:
+        for link in links:
+            st.markdown(f"[Klikšķini šeit, lai atvērtu saiti]({link})")
+    else:
+        st.warning("Netika atrasta neviena saite.")
 
-# Google Drive faila ID
-file_id = "1Xo7gVZ2WOm6yWv6o0-jCs_OsVQZQdffQ"
+# Google Drive faila ID un ZIP faila atrašanās vieta
+file_id = "1Xo7gVZ2WOm6yWv6o0-jCs_OsVQZQdffQ"  # Pārliecinies, ka šis ID ir pareizs
 output_zip_path = "LASMAP.zip"
 
 # Lejupielādē ZIP failu no Google Drive
 st.write("Lejupielādē ZIP failu no Google Drive...")
 try:
     download_from_google_drive(file_id, output_zip_path)
-    st.write(f"Fails veiksmīgi lejupielādēts: {output_zip_path}")
     
     # Izveido pagaidu direktoriju ZIP faila izsaiņošanai
     extracted_folder = "LASMAP_extracted"
     if os.path.exists(extracted_folder):
-        shutil.rmtree(extracted_folder)  # Izdzēst, ja jau eksistē
+        shutil.rmtree(extracted_folder)  # Dzēš, ja jau eksistē
     os.makedirs(extracted_folder, exist_ok=True)
 
     # Izsaiņo ZIP failu
-    shutil.unpack_archive(output_zip_path, extracted_folder)
-    st.write("ZIP fails veiksmīgi izsaiņots!")
-
-    # Ielādēt SHP failu
+    st.write("Izsaiņo ZIP failu...")
+    try:
+        shutil.unpack_archive(output_zip_path, extracted_folder)
+        st.success("ZIP fails veiksmīgi izsaiņots!")
+    except Exception as e:
+        st.error(f"Kļūda izsaiņojot ZIP failu: {e}")
+    
+    # Ielādē SHP failu
     try:
         shp_file_path = os.path.join(extracted_folder, 'LASMAP.shp')
         gdf = gpd.read_file(shp_file_path)
-        st.write("SHP fails veiksmīgi ielādēts.")
+        st.success("SHP fails veiksmīgi ielādēts!")
     except Exception as e:
         st.error(f"Kļūda SHP faila ielādē: {e}")
 
-    # Lietotājam piedāvā augšupielādēt visus SHP komponentes failus vienlaikus
+    # Lietotājam piedāvā augšupielādēt SHP komponentes failus (SHP, SHX, DBF)
     uploaded_shp = st.file_uploader("Augšupielādē savu kontūras SHP failu komponentes (SHP, SHX, DBF)", type=["shp", "shx", "dbf"], accept_multiple_files=True)
 
     if uploaded_shp and len(uploaded_shp) == 3:
@@ -58,14 +68,13 @@ try:
                     with open(output_path, 'wb') as f:
                         f.write(uploaded_file.getbuffer())
 
-                # Meklēt SHP failu un ielādēt ar GeoPandas
+                # Ielādē kontūras SHP failu
                 shp_file_path = [f.name for f in uploaded_shp if f.name.endswith('.shp')][0]
                 shp_file_path = os.path.join(temp_dir, shp_file_path)
 
                 try:
-                    # Ielādēt kontūras SHP failu
                     contour_gdf = gpd.read_file(shp_file_path)
-                    st.write("Kontūras SHP fails veiksmīgi ielādēts.")
+                    st.success("Kontūras SHP fails veiksmīgi ielādēts!")
 
                     # Pārbaudīt, vai kontūras ģeometrija pārklājas ar poligoniem no LASMAP
                     total_polygons = len(gdf)
@@ -85,13 +94,12 @@ try:
                     if matched_polygons == 0:
                         st.warning("Neviens poligons nepārklājās ar kontūras failu.")
                     else:
-                        # Parādīt visas saites kā klikšķināmas
                         st.write("Atrasto saišu saraksts:")
                         display_links(links)
                         st.success(f"Atrasti {matched_polygons} poligoni, kas pārklājas.")
                 except Exception as e:
-                    st.error(f"Kļūda, ielādējot SHP failu: {e}")
+                    st.error(f"Kļūda, ielādējot kontūras SHP failu: {e}")
     else:
-        st.write("Lūdzu, augšupielādē SHP, SHX un DBF failus vienlaikus.")
+        st.warning("Lūdzu, augšupielādē SHP, SHX un DBF failus vienlaikus.")
 except Exception as e:
     st.error(f"Kļūda ZIP faila lejupielādē no Google Drive: {e}")
