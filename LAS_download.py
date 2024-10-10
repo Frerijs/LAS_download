@@ -14,6 +14,16 @@ def download_from_google_drive(file_id, output_filename):
     except Exception as e:
         st.error(f"Kļūda lejupielādējot failu: {e}")
 
+# Funkcija, lai izveidotu *.bat failu ar atrastajām saitēm
+def create_bat_file(links, bat_filename):
+    try:
+        with open(bat_filename, 'w') as bat_file:
+            for link in links:
+                bat_file.write(f'start {link}\n')
+        st.success(f"BAT fails '{bat_filename}' veiksmīgi izveidots!")
+    except Exception as e:
+        st.error(f"Kļūda, veidojot BAT failu: {e}")
+
 # Google Drive faila ID un ZIP faila atrašanās vieta
 file_id = "1Xo7gVZ2WOm6yWv6o0-jCs_OsVQZQdffQ"  # Pārliecinies, ka šis ID ir pareizs
 output_zip_path = "LASMAP.zip"
@@ -94,6 +104,11 @@ try:
                         st.warning("Neviens poligons nepārklājās ar kontūras failu.")
                     else:
                         st.success(f"Atrasti {matched_polygons} poligoni, kas pārklājas.")
+                        
+                        # Izveidot BAT failu ar atrastajām saitēm
+                        bat_filename = "open_links.bat"
+                        create_bat_file(links, bat_filename)
+                        
                 except Exception as e:
                     st.error(f"Kļūda, ielādējot kontūras SHP failu: {e}")
     else:
