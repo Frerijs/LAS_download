@@ -14,14 +14,6 @@ def download_from_google_drive(file_id, output_filename):
     except Exception as e:
         st.error(f"Kļūda lejupielādējot failu: {e}")
 
-# Funkcija, lai parādītu tikai oriģinālās saites (bez dublikāta)
-def display_links(links):
-    if links:
-        for link in links:
-            st.write(f"Atrasta saite: {link}")
-    else:
-        st.warning("Netika atrasta neviena saite.")
-
 # Google Drive faila ID un ZIP faila atrašanās vieta
 file_id = "1Xo7gVZ2WOm6yWv6o0-jCs_OsVQZQdffQ"  # Pārliecinies, ka šis ID ir pareizs
 output_zip_path = "LASMAP.zip"
@@ -94,6 +86,7 @@ try:
                     if matched_polygons == 0:
                         st.warning("Neviens poligons nepārklājās ar kontūras failu.")
                     else:
+                        # Ja nepieciešams paslēpt saišu sarakstu, tad izlaid šo rindiņu
                         st.success(f"Atrasti {matched_polygons} poligoni, kas pārklājas.")
                 except Exception as e:
                     st.error(f"Kļūda, ielādējot kontūras SHP failu: {e}")
