@@ -38,14 +38,16 @@ def download_data(url, output_filename):
     if response.status_code == 200:
         with open(output_filename, 'wb') as file:
             file.write(response.content)
-        return f"Fails '{output_filename}' veiksmīgi lejuplādēts."
+        return output_filename
     else:
-        return "Lejuplāde neizdevās."
+        return None
 
-# Funkcija, lai atvērtu visus saistītos linkus pārlūkprogrammā
-def open_all_links(links):
-    for link in links:
-        webbrowser.open(link)
+# Funkcija, lai saglabātu visus failus ZIP arhīvā
+def save_as_zip(file_paths, output_zip_path):
+    with zipfile.ZipFile(output_zip_path, 'w') as zipf:
+        for file in file_paths:
+            zipf.write(file, os.path.basename(file))
+    return output_zip_path
 
 # Google Drive faila ID
 file_id = "1Xo7gVZ2WOm6yWv6o0-jCs_OsVQZQdffQ"
@@ -109,8 +111,7 @@ if download_zip_from_google_drive(file_id, output_zip_path):
                     progress_bar = st.progress(0)
                     total_polygons = len(gdf)
                     matched_polygons = 0  # Skaitīt pārklājušos poligonus
-
-                    links = []  # Saglabāt visas saites sarakstā
+                    file_paths = []  # Saglabāt ceļus uz lejupielādētajiem failiem
 
                     for index, row in gdf.iterrows():
                         if 'link' in row and row['link']:  # Pārbaudīt, vai ir "link" atribūts
@@ -119,20 +120,24 @@ if download_zip_from_google_drive(file_id, output_zip_path):
                             if contour_gdf.intersects(polygon).any():
                                 matched_polygons += 1
                                 link = row['link']
-                                links.append(link)  # Saglabā visas saites sarakstā
+                                filename = os.path.join(download_folder, f'downloaded_data_{index}.zip')
                                 st.write(f"Lejupielādē failu no: {link}")
-                                result = download_data(link, os.path.join(download_folder, f'downloaded_data_{index}.zip'))
-                                st.write(result)
-                                
+                                result = download_data(link, filename)
+                                if result:
+                                    file_paths.append(result)
+                                    st.write(f"Fails '{filename}' veiksmīgi lejuplādēts.")
+                        
                             progress_bar.progress(min(int((index + 1) / total_polygons * 100), 100))
 
                     if matched_polygons == 0:
                         st.warning("Neviens poligons nepārklājās ar kontūras failu.")
                     else:
-                        # Poga, lai atvērtu visas saites
-                        if st.button("Atvērt visus atrastos linkus pārlūkā"):
-                            open_all_links(links)
+                        # Saglabāt visus failus ZIP arhīvā
+                        zip_output_path = os.path.join(download_folder, 'all_downloads.zip')
+                        zip_result = save_as_zip(file_paths, zip_output_path)
                         st.success(f"Lejupielādes process pabeigts. Pārklājās {matched_polygons} poligoni.")
+                        # Nodrošināt saiti uz ZIP failu
+                        st.write(f"[Lejupielādēt visus failus ZIP arhīvā]({zip_output_path})")
                 except Exception as e:
                     st.error(f"Kļūda, ielādējot SHP failu: {e}")
     else:
