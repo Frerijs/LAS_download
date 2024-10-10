@@ -3,6 +3,7 @@ import geopandas as gpd
 import gdown
 import os
 import shutil
+import webbrowser
 from tempfile import TemporaryDirectory
 
 # Funkcija, lai lejupielādētu failu no Google Drive, izmantojot gdown
@@ -105,6 +106,10 @@ try:
                         # Izveidot BAT failu un piedāvāt to lejupielādei
                         bat_content = create_bat_file(links)
                         st.download_button(label="Lejupielādēt BAT failu", data=bat_content, file_name="open_links.bat", mime="application/octet-stream")
+                        
+                        # Automātiski atvērt visus linkus pārlūkā
+                        for link in links:
+                            webbrowser.open(link)
                         
                 except Exception as e:
                     st.error(f"Kļūda, ielādējot kontūras SHP failu: {e}")
