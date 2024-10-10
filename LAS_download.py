@@ -3,14 +3,21 @@ import geopandas as gpd
 import requests
 import zipfile
 import os
-import gdown
 import shutil
 import webbrowser
 
 # Funkcija, lai lejupielādētu ZIP failu no Google Drive
 def download_zip_from_google_drive(file_id, output_filename):
-    download_url = f"https://drive.google.com/uc?id={file_id}"
-    gdown.download(download_url, output_filename, quiet=False)
+    download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+    response = requests.get(download_url, stream=True)
+    if response.status_code == 200:
+        with open(output_filename, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=128):
+                f.write(chunk)
+        return True
+    else:
+        st.error(f"Neizdevās lejupielādēt ZIP failu no Google Drive. Statusa kods: {response.status_code}")
+        return False
 
 # Funkcija ZIP faila izsaiņošanai
 def unzip_file(zip_file_path, extract_to):
@@ -27,16 +34,13 @@ def download_data(url, output_filename):
     else:
         return "Lejuplāde neizdevās."
 
-# Google Drive faila ID (no tavām dotajām saitēm)
+# Google Drive faila ID
 file_id = "1Xo7gVZ2WOm6yWv6o0-jCs_OsVQZQdffQ"
 output_zip_path = "LASMAP.zip"
 
 # Lejupielādē ZIP failu no Google Drive
 st.write("Lejupielādē ZIP failu no Google Drive...")
-download_zip_from_google_drive(file_id, output_zip_path)
-
-# Pārbaudi, vai ZIP fails tika veiksmīgi lejupielādēts
-if os.path.exists(output_zip_path):
+if download_zip_from_google_drive(file_id, output_zip_path):
     st.write(f"Fails veiksmīgi lejupielādēts: {output_zip_path}")
     
     # Izveido pagaidu direktoriju ZIP faila izsaiņošanai
