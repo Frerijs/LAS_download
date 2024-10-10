@@ -1,8 +1,14 @@
 import streamlit as st
 import geopandas as gpd
+import gdown
 import os
 import shutil
 from tempfile import TemporaryDirectory
+
+# Funkcija, lai lejupielādētu failu no Google Drive, izmantojot gdown
+def download_from_google_drive(file_id, output_filename):
+    download_url = f"https://drive.google.com/uc?id={file_id}"
+    gdown.download(download_url, output_filename, quiet=False)
 
 # Funkcija, lai parādītu saites kā klikšķināmas
 def display_links(links):
@@ -10,24 +16,32 @@ def display_links(links):
         st.markdown(f"[Klikšķini šeit, lai atvērtu saiti]({link})")
 
 # Google Drive faila ID
-file_id = "1Xo7gVZ2WOm6yWv6o0-jCs_OsVQZQdffQ"
+file_id = "1Xo7gVZ2WOm6yWv6o0-jCs_OsVQZQdffQ"  # Aizstāj ar īsto faila ID
 output_zip_path = "LASMAP.zip"
 
-# Progresbar un pogas pievienošana
-st.write("Ielādē ZIP failu no Google Drive...")
-progress_message = st.empty()
-progress_message.write("Sākas lejupielāde...")
-# Iedomāsimies, ka ZIP fails ir ielādēts un izsaiņots šeit
-
-# Simulācija: ģenerēti dati no "LASMAP"
-extracted_folder = "LASMAP_extracted"
-shp_file_path = os.path.join(extracted_folder, 'LASMAP.shp')
-
+# Lejupielādē ZIP failu no Google Drive
+st.write("Lejupielādē ZIP failu no Google Drive...")
 try:
-    # Simulācija: Ielādē "LASMAP" SHP failu
-    # Reālais scenārijs būtu gdf = gpd.read_file(shp_file_path)
-    gdf = gpd.GeoDataFrame()  # Aizstāj šo ar īsto SHP datu ielādi
-    st.write("SHP fails veiksmīgi ielādēts.")
+    download_from_google_drive(file_id, output_zip_path)
+    st.write(f"Fails veiksmīgi lejupielādēts: {output_zip_path}")
+    
+    # Izveido pagaidu direktoriju ZIP faila izsaiņošanai
+    extracted_folder = "LASMAP_extracted"
+    if os.path.exists(extracted_folder):
+        shutil.rmtree(extracted_folder)  # Izdzēst, ja jau eksistē
+    os.makedirs(extracted_folder, exist_ok=True)
+
+    # Izsaiņo ZIP failu
+    shutil.unpack_archive(output_zip_path, extracted_folder)
+    st.write("ZIP fails veiksmīgi izsaiņots!")
+
+    # Ielādēt SHP failu
+    try:
+        shp_file_path = os.path.join(extracted_folder, 'LASMAP.shp')
+        gdf = gpd.read_file(shp_file_path)
+        st.write("SHP fails veiksmīgi ielādēts.")
+    except Exception as e:
+        st.error(f"Kļūda SHP faila ielādē: {e}")
 
     # Lietotājam piedāvā augšupielādēt visus SHP komponentes failus vienlaikus
     uploaded_shp = st.file_uploader("Augšupielādē savu kontūras SHP failu komponentes (SHP, SHX, DBF)", type=["shp", "shx", "dbf"], accept_multiple_files=True)
@@ -83,4 +97,4 @@ try:
     else:
         st.write("Lūdzu, augšupielādē SHP, SHX un DBF failus vienlaikus.")
 except Exception as e:
-    st.error(f"Kļūda SHP faila ielādē: {e}")
+    st.error(f"Kļūda ZIP faila lejupielādē no Google Drive: {e}")
