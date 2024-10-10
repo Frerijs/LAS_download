@@ -96,28 +96,36 @@ if download_zip_from_google_drive(file_id, output_zip_path):
                     st.write("Kontūras SHP fails veiksmīgi ielādēts.")
 
                     # Piedāvā izvēlēties lejupielādes mapi
-                    download_folder = st.text_input("Lejupielādes mape", value=os.getcwd())
+                    download_folder = st.text_input("Izvēlies lejupielādes mapi:", value=os.getcwd())
+                    if not os.path.exists(download_folder):
+                        os.makedirs(download_folder)
 
                     # Pārbaudīt, vai kontūras ģeometrija pārklājas ar poligoniem no LASMAP
                     progress_bar = st.progress(0)
                     total_polygons = len(gdf)
+                    matched_polygons = 0  # Skaitīt pārklājušos poligonus
 
                     for index, row in gdf.iterrows():
                         if 'link' in row and row['link']:  # Pārbaudīt, vai ir "link" atribūts
                             polygon = row.geometry
+                            # Pārbaudīt pārklāšanos ar kontūru faila ģeometriju
                             if contour_gdf.intersects(polygon).any():
+                                matched_polygons += 1
                                 link = row['link']
                                 filename = os.path.join(download_folder, f'downloaded_data_{index}.zip')
                                 st.write(f"Lejupielādē failu no: {link}")
                                 result = download_data(link, filename)
                                 st.write(result)
+                                
+                                # Automātiski atvērt linku tīmekļa pārlūkā
                                 webbrowser.open(link)
-                            else:
-                                st.write(f"Poligons {index} nepārklājas ar kontūras failu.")
                         
-                        progress_bar.progress(int((index + 1) / total_polygons * 100))
+                            progress_bar.progress(min(int((index + 1) / total_polygons * 100), 100))
 
-                    st.success("Lejupielādes process pabeigts.")
+                    if matched_polygons == 0:
+                        st.warning("Neviens poligons nepārklājās ar kontūras failu.")
+                    else:
+                        st.success(f"Lejupielādes process pabeigts. Pārklājās {matched_polygons} poligoni.")
                 except Exception as e:
                     st.error(f"Kļūda, ielādējot SHP failu: {e}")
     else:
