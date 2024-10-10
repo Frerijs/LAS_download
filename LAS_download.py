@@ -4,7 +4,6 @@ import requests
 import zipfile
 import os
 import shutil
-import webbrowser
 from tempfile import TemporaryDirectory
 
 # Funkcija, lai lejupielādētu failu
@@ -30,11 +29,10 @@ def download_all_links(links, download_folder):
         st.write(f"Lejupielādē failu no: {link}")
         download_data(link, filename)
 
-# Google Drive faila ID un cita loģika
-
-# Šeit tiek definēta poga, kas uzsāk procesu
+# Galvenā daļa ...
 uploaded_shp = st.file_uploader("Augšupielādē savu kontūras SHP failu komponentes (SHP, SHX, DBF)", type=["shp", "shx", "dbf"], accept_multiple_files=True)
 
+# Pārbauda, vai ir augšupielādēti faila komponenti
 if uploaded_shp and len(uploaded_shp) == 3:
     start_button = st.button("Sākt")
 
@@ -65,15 +63,19 @@ if uploaded_shp and len(uploaded_shp) == 3:
                 links = []
 
                 # Pārbaudīt, vai kontūras ģeometrija pārklājas ar poligoniem no LASMAP
-                total_polygons = 100  # Aizvieto ar reālo poligonu skaitu
+                total_polygons = len(contour_gdf)
                 progress_bar = st.progress(0)
 
-                for index in range(total_polygons):
-                    link = f"https://example.com/file_{index}.las"  # Aizvieto ar reālo linku
-                    links.append(link)  # Pievienot saiti sarakstam
-                    st.write(f"Atrasts pārklājums. Saites: {link}")
-
-                    progress_bar.progress(int((index + 1) / total_polygons * 100))
+                for index, row in contour_gdf.iterrows():
+                    if 'link' in row and row['link']:  # Pārbaudīt, vai ir "link" atribūts
+                        polygon = row.geometry
+                        # Pārbaudīt pārklāšanos ar kontūru faila ģeometriju
+                        if contour_gdf.intersects(polygon).any():
+                            link = row['link']
+                            links.append(link)  # Pievienot saiti sarakstam
+                            st.write(f"Atrasts pārklājums. Saites: {link}")
+                            
+                        progress_bar.progress(int((index + 1) / total_polygons * 100))
 
                 # Ja atrastas saites, piedāvā pabeigt visas lejupielādes
                 if links:
