@@ -5,3 +5,5 @@ shapely
 fiona
 pyproj
 gdown
+gspread 
+oauth2client
