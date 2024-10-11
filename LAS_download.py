@@ -85,18 +85,21 @@ if 'logged_in' not in st.session_state:
 
 # Funkcija, lai pārvaldītu pieteikšanās procesu
 def login_screen():
-    st.title("Pieteikšanās")
-    username = st.text_input("Lietotājvārds")
-    password = st.text_input("Parole", type="password")
-    
-    if st.button("Pieslēgties") or st.session_state.logged_in:  # Turpina, ja pieteicies
-        users = get_user_data()
-        if authenticate(username, password, users) or st.session_state.logged_in:
-            st.session_state.logged_in = True
-            st.success("Veiksmīgi pieteicies!")
-            main_app()  # Automātiski pārslēdzas uz galveno aplikāciju
-        else:
-            st.error("Nepareizs lietotājvārds vai parole.")
+    if not st.session_state.logged_in:  # Tikai ja nav pieslēdzies
+        st.title("Pieteikšanās")
+        
+        with st.form("login_form", clear_on_submit=True):
+            username = st.text_input("Lietotājvārds")
+            password = st.text_input("Parole", type="password")
+            submit_button = st.form_submit_button("Pieslēgties")
+        
+        if submit_button:  # vai nospiests Enter
+            users = get_user_data()
+            if authenticate(username, password, users):
+                st.session_state.logged_in = True  # Pieslēgts
+                st.experimental_rerun()  # Pārlādē programmu, lai paslēptu pieteikšanās logu
+            else:
+                st.error("Nepareizs lietotājvārds vai parole.")
 
 # Funkcija, lai attēlotu galveno aplikācijas saturu
 def main_app():
