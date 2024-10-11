@@ -97,12 +97,14 @@ def login_screen():
             users = get_user_data()
             if authenticate(username, password, users):
                 st.session_state.logged_in = True  # Pieslēgts
-                st.experimental_rerun()  # Pārlādē programmu, lai paslēptu pieteikšanās logu
+                # Neslēp login logu ar rerun, bet pāriet uz aplikāciju
+                st.success("Veiksmīgi pieteicies!")
+                show_app()
             else:
                 st.error("Nepareizs lietotājvārds vai parole.")
 
 # Funkcija, lai attēlotu galveno aplikācijas saturu
-def main_app():
+def show_app():
     st.success("Veiksmīgi pieteicies!")
     
     # Progresjosla un lejupielādes process
@@ -189,8 +191,8 @@ def main_app():
     except Exception as e:
         st.error(f"Kļūda: {e}")
 
-# Ja pieteicies, rāda galveno aplikāciju, ja nē, rāda pieteikšanās ekrānu
-if not st.session_state.logged_in:
-    login_screen()
+# Rāda galveno aplikāciju, ja pieslēgts, citādi pieteikšanās ekrāns
+if st.session_state.logged_in:
+    show_app()
 else:
-    main_app()
+    login_screen()
