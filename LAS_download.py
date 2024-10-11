@@ -16,7 +16,7 @@ def download_from_google_drive(file_id, output_filename):
 
 # Funkcija, lai izveidotu HTML kodu, kas atver visas saites vienlaikus ar aizkavi
 def create_open_all_links_button(links):
-    # HTML ar JS, kas rada pogu un ar JS palīdzību atver visas saites ar 1 sek. aizkavi
+    # HTML ar JS, kas rada pogu un ar JS palīdzību atver visas saites ar 0.5 sek. aizkavi
     html_content = "<html><body>"
     for link in links:
         html_content += f'<a href="{link}" target="_blank">{link}</a><br>'
@@ -28,7 +28,7 @@ def create_open_all_links_button(links):
             (function(i) {
                 setTimeout(function() {
                     window.open(links[i].href, '_blank');
-                }, i * 1000); // 1 sekunde starp katru saiti
+                }, i * 500); // 0.5 sekunde starp katru saiti
             })(i);
         }
     }
@@ -118,7 +118,10 @@ try:
                     else:
                         st.success(f"Atrasti {matched_polygons} poligoni, kas pārklājas.")
 
-                        # Parādīt visas saites un pievienot HTML pogu, lai tās visas atvērtu vienlaicīgi
+                        # Parādīt brīdinājuma tekstu par uznirstošo logu bloķētāju
+                        st.warning("Lūdzu, izslēdziet uznirstošo logu bloķētāju, lai lejupielādētu visus datus ar vienu klikšķi.")
+
+                        # Parādīt visas saites un pievienot HTML pogu, lai tās visas atvērtu vienlaicīgi ar aizkavi
                         html_content = create_open_all_links_button(links)
                         st.components.v1.html(html_content, height=300)
 
