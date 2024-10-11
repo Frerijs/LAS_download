@@ -80,115 +80,124 @@ def create_open_all_links_button(links):
 file_id = "1Xo7gVZ2WOm6yWv6o0-jCs_OsVQZQdffQ"
 output_zip_path = "LASMAP.zip"
 
-# Pieteikšanās interfeiss
-st.title("Pieteikšanās")
+# Sesija, lai saglabātu pieslēgšanās statusu
+if 'logged_in' not in st.session_state:
+    st.session_state['logged_in'] = False
 
-username = st.text_input("Lietotājvārds")
-password = st.text_input("Parole", type="password")
+# Ja nav pieslēgts, parādīt pieteikšanās ekrānu
+if not st.session_state['logged_in']:
+    st.title("Pieteikšanās")
 
-if st.button("Pieslēgties"):
-    users = get_user_data()
-    if authenticate(username, password, users):
-        st.success("Veiksmīgi pieteicies!")
-        
-        # Progresjosla un lejupielādes process
-        progress_bar = st.progress(0)
-        progress_percentage = 0
+    # Veidojam formu ar automātisku apstiprināšanu ar "Enter"
+    with st.form("login_form"):
+        username = st.text_input("Lietotājvārds")
+        password = st.text_input("Parole", type="password")
+        submit_button = st.form_submit_button("Pieslēgties")
 
-        # Jaunais virsraksts
-        st.write("Lejupielādē LAS datu karšu lapas...")
+    if submit_button:
+        users = get_user_data()
+        if authenticate(username, password, users):
+            st.session_state['logged_in'] = True
+            st.success("Veiksmīgi pieteicies!")
+        else:
+            st.error("Nepareizs lietotājvārds vai parole.")
+else:
+    # Ja pieslēgšanās ir veiksmīga, rādīt programmu
+    st.title("Lejupielādē LAS datu karšu lapas...")
 
-        try:
-            # Lejupielādē ZIP failu no Google Drive
-            if download_from_google_drive(file_id, output_zip_path):
+    # Progresjosla un lejupielādes process
+    progress_bar = st.progress(0)
+    progress_percentage = 0
+
+    try:
+        # Lejupielādē ZIP failu no Google Drive
+        if download_from_google_drive(file_id, output_zip_path):
+            progress_percentage += 0.3
+            progress_bar.progress(progress_percentage)
+
+            # Izveido pagaidu direktoriju ZIP faila izsaiņošanai
+            extracted_folder = "LASMAP_extracted"
+            if os.path.exists(extracted_folder):
+                shutil.rmtree(extracted_folder)  # Dzēš, ja jau eksistē
+            os.makedirs(extracted_folder, exist_ok=True)
+
+            # Izsaiņo ZIP failu
+            try:
+                shutil.unpack_archive(output_zip_path, extracted_folder)
                 progress_percentage += 0.3
                 progress_bar.progress(progress_percentage)
+            except Exception as e:
+                st.error(f"Kļūda izsaiņojot ZIP failu: {e}")
 
-                # Izveido pagaidu direktoriju ZIP faila izsaiņošanai
-                extracted_folder = "LASMAP_extracted"
-                if os.path.exists(extracted_folder):
-                    shutil.rmtree(extracted_folder)  # Dzēš, ja jau eksistē
-                os.makedirs(extracted_folder, exist_ok=True)
+            # Ielādē SHP failu
+            try:
+                shp_file_path = os.path.join(extracted_folder, 'LASMAP.shp')
+                gdf = gpd.read_file(shp_file_path)
+                progress_percentage += 0.4
+                progress_bar.progress(progress_percentage)
+            except Exception as e:
+                st.error(f"Kļūda SHP faila ielādē: {e}")
 
-                # Izsaiņo ZIP failu
-                try:
-                    shutil.unpack_archive(output_zip_path, extracted_folder)
-                    progress_percentage += 0.3
-                    progress_bar.progress(progress_percentage)
-                except Exception as e:
-                    st.error(f"Kļūda izsaiņojot ZIP failu: {e}")
+            # Lietotājam piedāvā augšupielādēt SHP komponentes failus (SHP, SHX, DBF)
+            uploaded_shp = st.file_uploader("Augšupielādē savu kontūras SHP failu komponentes (SHP, SHX, DBF)", type=["shp", "shx", "dbf"], accept_multiple_files=True)
 
-                # Ielādē SHP failu
-                try:
-                    shp_file_path = os.path.join(extracted_folder, 'LASMAP.shp')
-                    gdf = gpd.read_file(shp_file_path)
-                    progress_percentage += 0.4
-                    progress_bar.progress(progress_percentage)
-                except Exception as e:
-                    st.error(f"Kļūda SHP faila ielādē: {e}")
+            if uploaded_shp and len(uploaded_shp) == 3:
+                start_button = st.button("Sākt")
 
-                # Lietotājam piedāvā augšupielādēt SHP komponentes failus (SHP, SHX, DBF)
-                uploaded_shp = st.file_uploader("Augšupielādē savu kontūras SHP failu komponentes (SHP, SHX, DBF)", type=["shp", "shx", "dbf"], accept_multiple_files=True)
+                if start_button:
+                    with TemporaryDirectory() as temp_dir:
+                        # Saglabāt visus augšupielādētos failus pagaidu mapē
+                        for uploaded_file in uploaded_shp:
+                            output_path = os.path.join(temp_dir, uploaded_file.name)
+                            with open(output_path, 'wb') as f:
+                                f.write(uploaded_file.getbuffer())
 
-                if uploaded_shp and len(uploaded_shp) == 3:
-                    start_button = st.button("Sākt")
+                        # Ielādē kontūras SHP failu
+                        shp_file_path = [f.name for f in uploaded_shp if f.name.endswith('.shp')][0]
+                        shp_file_path = os.path.join(temp_dir, shp_file_path)
 
-                    if start_button:
-                        with TemporaryDirectory() as temp_dir:
-                            # Saglabāt visus augšupielādētos failus pagaidu mapē
-                            for uploaded_file in uploaded_shp:
-                                output_path = os.path.join(temp_dir, uploaded_file.name)
-                                with open(output_path, 'wb') as f:
-                                    f.write(uploaded_file.getbuffer())
+                        try:
+                            contour_gdf = gpd.read_file(shp_file_path)
 
-                            # Ielādē kontūras SHP failu
-                            shp_file_path = [f.name for f in uploaded_shp if f.name.endswith('.shp')][0]
-                            shp_file_path = os.path.join(temp_dir, shp_file_path)
+                            # Pārbaudīt, vai kontūras ģeometrija pārklājas ar poligoniem no LASMAP
+                            total_polygons = len(gdf)
+                            matched_polygons = 0  # Skaitīt pārklājušos poligonus
+                            links = []  # Saglabāt saites
 
-                            try:
-                                contour_gdf = gpd.read_file(shp_file_path)
+                            # Progresjoslas izveide
+                            progress_bar = st.progress(0)
+                            progress_percentage = 0
 
-                                # Pārbaudīt, vai kontūras ģeometrija pārklājas ar poligoniem no LASMAP
-                                total_polygons = len(gdf)
-                                matched_polygons = 0  # Skaitīt pārklājušos poligonus
-                                links = []  # Saglabāt saites
+                            for index, row in gdf.iterrows():
+                                if 'link' in row and row['link']:  # Pārbaudīt, vai ir "link" atribūts
+                                    polygon = row.geometry
+                                    # Pārbaudīt pārklāšanos ar kontūru faila ģeometriju
+                                    if contour_gdf.intersects(polygon).any():
+                                        matched_polygons += 1
+                                        link = row['link']
+                                        links.append(link)  # Saglabāt saiti sarakstā
 
-                                # Progresjoslas izveide
-                                progress_bar = st.progress(0)
-                                progress_percentage = 0
+                                        # Atjauno progresjoslu
+                                        progress_percentage = (index + 1) / total_polygons
+                                        progress_bar.progress(progress_percentage)
 
-                                for index, row in gdf.iterrows():
-                                    if 'link' in row and row['link']:  # Pārbaudīt, vai ir "link" atribūts
-                                        polygon = row.geometry
-                                        # Pārbaudīt pārklāšanos ar kontūru faila ģeometriju
-                                        if contour_gdf.intersects(polygon).any():
-                                            matched_polygons += 1
-                                            link = row['link']
-                                            links.append(link)  # Saglabāt saiti sarakstā
+                            if matched_polygons == 0:
+                                st.warning("Neviens poligons nepārklājās ar kontūras failu.")
+                            else:
+                                st.success(f"Atrasti {matched_polygons} poligoni, kas pārklājas.")
 
-                                            # Atjauno progresjoslu
-                                            progress_percentage = (index + 1) / total_polygons
-                                            progress_bar.progress(progress_percentage)
+                                # Parādīt brīdinājuma tekstu par uznirstošo logu bloķētāju
+                                st.warning("Lūdzu, izslēdziet uznirstošo logu bloķētāju, lai lejupielādētu visus datus ar vienu klikšķi.")
 
-                                if matched_polygons == 0:
-                                    st.warning("Neviens poligons nepārklājās ar kontūras failu.")
-                                else:
-                                    st.success(f"Atrasti {matched_polygons} poligoni, kas pārklājas.")
+                                # Parādīt visas saites un pievienot HTML pogu, lai tās visas atvērtu vienlaicīgi ar aizkavi
+                                html_content = create_open_all_links_button(links)
+                                st.components.v1.html(html_content, height=300)
 
-                                    # Parādīt brīdinājuma tekstu par uznirstošo logu bloķētāju
-                                    st.warning("Lūdzu, izslēdziet uznirstošo logu bloķētāju, lai lejupielādētu visus datus ar vienu klikšķi.")
-
-                                    # Parādīt visas saites un pievienot HTML pogu, lai tās visas atvērtu vienlaicīgi ar aizkavi
-                                    html_content = create_open_all_links_button(links)
-                                    st.components.v1.html(html_content, height=300)
-
-                            except Exception as e:
-                                st.error(f"Kļūda, ielādējot kontūras SHP failu: {e}")
-                else:
-                    st.warning("Lūdzu, augšupielādē SHP, SHX un DBF failus vienlaikus.")
+                        except Exception as e:
+                            st.error(f"Kļūda, ielādējot kontūras SHP failu: {e}")
             else:
-                st.error("Kļūda ZIP faila lejupielādē no Google Drive.")
-        except Exception as e:
-            st.error(f"Kļūda: {e}")
-    else:
-        st.error("Nepareizs lietotājvārds vai parole.")
+                st.warning("Lūdzu, augšupielādē SHP, SHX un DBF failus vienlaikus.")
+        else:
+            st.error("Kļūda ZIP faila lejupielādē no Google Drive.")
+    except Exception as e:
+        st.error(f"Kļūda: {e}")
