@@ -7,6 +7,8 @@ google_sheet_csv_url = "https://docs.google.com/spreadsheets/d/1u-myVB6WYK0Zp18g
 # Funkcija, lai iegūtu lietotāja datus no Google Sheets
 def get_user_data():
     df = pd.read_csv(google_sheet_csv_url)
+    df.columns = df.columns.str.strip()  # Noņem atstarpes kolonnu nosaukumiem
+    st.write("Kolonnu nosaukumi:", df.columns.tolist())  # Izdrukā kolonnu nosaukumus pārbaudei
     return df
 
 # Funkcija, lai pārbaudītu lietotāja pieteikšanos
