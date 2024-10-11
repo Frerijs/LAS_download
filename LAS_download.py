@@ -6,10 +6,11 @@ import shutil
 from tempfile import TemporaryDirectory
 
 # Funkcija, lai lejupielādētu failu no Google Drive, izmantojot gdown
-def download_from_google_drive(file_id, output_filename):
+def download_from_google_drive(file_id, output_filename, progress_bar):
     try:
         download_url = f"https://drive.google.com/uc?id={file_id}"
         gdown.download(download_url, output_filename, quiet=False)
+        progress_bar.progress(1.0)  # Kad lejupielāde ir pabeigta, iestata progresu uz 100%
         return True
     except Exception as e:
         st.error(f"Kļūda lejupielādējot failu: {e}")
@@ -65,16 +66,14 @@ output_zip_path = "LASMAP.zip"
 # Jaunais virsraksts
 st.write("Lejupielādē LAS datu karšu lapas...")
 
-# Progresjosla un lejupielādes process
-progress_bar = st.progress(0)
-progress_percentage = 0
+# Progresjosla, kas specifiski attiecas tikai uz lejupielādi
+download_progress_bar = st.progress(0)
 
 try:
-    # Lejupielādē ZIP failu no Google Drive
-    if download_from_google_drive(file_id, output_zip_path):
-        progress_percentage += 0.3
-        progress_bar.progress(progress_percentage)
-    
+    # Lejupielādē ZIP failu no Google Drive ar specifisku progresjoslu lejupielādei
+    if download_from_google_drive(file_id, output_zip_path, download_progress_bar):
+        st.success("Fails veiksmīgi lejupielādēts!")
+        
         # Izveido pagaidu direktoriju ZIP faila izsaiņošanai
         extracted_folder = "LASMAP_extracted"
         if os.path.exists(extracted_folder):
@@ -84,8 +83,7 @@ try:
         # Izsaiņo ZIP failu
         try:
             shutil.unpack_archive(output_zip_path, extracted_folder)
-            progress_percentage += 0.3
-            progress_bar.progress(progress_percentage)
+            st.success("ZIP fails veiksmīgi izsaiņots!")
         except Exception as e:
             st.error(f"Kļūda izsaiņojot ZIP failu: {e}")
     
@@ -93,8 +91,7 @@ try:
         try:
             shp_file_path = os.path.join(extracted_folder, 'LASMAP.shp')
             gdf = gpd.read_file(shp_file_path)
-            progress_percentage += 0.4
-            progress_bar.progress(progress_percentage)
+            st.success("SHP fails veiksmīgi ielādēts!")
         except Exception as e:
             st.error(f"Kļūda SHP faila ielādē: {e}")
 
@@ -103,22 +100,14 @@ try:
 
         if uploaded_shp and len(uploaded_shp) == 3:
             start_button = st.button("Sākt")
-            
-            # Progresjosla augšupielādētiem failiem
-            upload_progress_bar = st.progress(0)
-            upload_progress_percentage = 0
 
             if start_button:
                 with TemporaryDirectory() as temp_dir:
                     # Saglabāt visus augšupielādētos failus pagaidu mapē
-                    for i, uploaded_file in enumerate(uploaded_shp):
+                    for uploaded_file in uploaded_shp:
                         output_path = os.path.join(temp_dir, uploaded_file.name)
                         with open(output_path, 'wb') as f:
                             f.write(uploaded_file.getbuffer())
-                        
-                        # Atjaunina progresjoslu par failu augšupielādi
-                        upload_progress_percentage = (i + 1) / len(uploaded_shp)
-                        upload_progress_bar.progress(upload_progress_percentage)
 
                     # Ielādē kontūras SHP failu
                     shp_file_path = [f.name for f in uploaded_shp if f.name.endswith('.shp')][0]
@@ -132,9 +121,9 @@ try:
                         matched_polygons = 0  # Skaitīt pārklājušos poligonus
                         links = []  # Saglabāt saites
 
-                        # Progresjoslas izveide
+                        # Progresjoslas izveide procesiem
                         process_progress_bar = st.progress(0)
-                        process_percentage = 0
+                        progress_percentage = 0
 
                         for index, row in gdf.iterrows():
                             if 'link' in row and row['link']:  # Pārbaudīt, vai ir "link" atribūts
@@ -146,8 +135,8 @@ try:
                                     links.append(link)  # Saglabāt saiti sarakstā
                                 
                                 # Atjauno progresjoslu
-                                process_percentage = (index + 1) / total_polygons
-                                process_progress_bar.progress(process_percentage)
+                                progress_percentage = (index + 1) / total_polygons
+                                process_progress_bar.progress(progress_percentage)
 
                         if matched_polygons == 0:
                             st.warning("Neviens poligons nepārklājās ar kontūras failu.")
