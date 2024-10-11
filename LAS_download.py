@@ -1,25 +1,17 @@
 import streamlit as st
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
 import gdown
 import os
 import shutil
 from tempfile import TemporaryDirectory
 
-# Funkcija, lai ielādētu Google Sheets piekļuvi
-def load_credentials():
-    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    # Šeit norādiet pareizu ceļu uz jūsu JSON failu
-    creds = ServiceAccountCredentials.from_json_keyfile_name('path_to_your_credentials.json', scope)
-    client = gspread.authorize(creds)
-    return client
-
-# Funkcija, lai saņemtu datus no Google Sheets
+# Funkcija, lai saņemtu datus no Google Sheets izmantojot gspread
 def get_user_data():
-    client = load_credentials()
-    sheet = client.open_by_url('https://docs.google.com/spreadsheets/d/1u-myVB6WYK0Zp18g7YDZt59AdrmHB0nA4rvQehYbcjg/edit?usp=sharing')
+    # Izveidot pievienošanos Google Sheets
+    google_sheet_url = 'https://docs.google.com/spreadsheets/d/1u-myVB6WYK0Zp18g7YDZt59AdrmHB0nA4rvQehYbcjg/edit?usp=sharing'
+    sheet = gspread.service_account().open_by_url(google_sheet_url)
     worksheet = sheet.get_worksheet(0)  # Ielādē pirmo lapu
-    data = worksheet.get_all_records()
+    data = worksheet.get_all_records()  # Iegūst visus datus no tabulas
     return data
 
 # Funkcija, lai autentificētu lietotāju
