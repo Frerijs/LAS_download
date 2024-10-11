@@ -9,7 +9,8 @@ from tempfile import TemporaryDirectory
 def get_user_data():
     # Izveidot pievienošanos Google Sheets
     google_sheet_url = 'https://docs.google.com/spreadsheets/d/1u-myVB6WYK0Zp18g7YDZt59AdrmHB0nA4rvQehYbcjg/edit?usp=sharing'
-    sheet = gspread.service_account().open_by_url(google_sheet_url)
+    gc = gspread.oauth()  # Izmanto oauth, lai piekļūtu publiski pieejamai Google Sheets
+    sheet = gc.open_by_url(google_sheet_url)
     worksheet = sheet.get_worksheet(0)  # Ielādē pirmo lapu
     data = worksheet.get_all_records()  # Iegūst visus datus no tabulas
     return data
