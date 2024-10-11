@@ -88,12 +88,13 @@ def login_screen():
     if not st.session_state.logged_in:  # Tikai ja nav pieslēdzies
         st.title("Pieteikšanās")
         
+        # Veidlapa, kur lietotājs var ievadīt savu lietotājvārdu un paroli
         with st.form("login_form", clear_on_submit=True):
-            username = st.text_input("Lietotājvārds", on_change=lambda: st.session_state.get('username', username))
-            password = st.text_input("Parole", type="password", on_change=lambda: st.session_state.get('password', password))
+            username = st.text_input("Lietotājvārds")
+            password = st.text_input("Parole", type="password")
             submit_button = st.form_submit_button("Pieslēgties")
         
-        if submit_button:  # vai nospiests Enter
+        if submit_button:
             users = get_user_data()
             if authenticate(username, password, users):
                 st.session_state.logged_in = True  # Pieslēgts
