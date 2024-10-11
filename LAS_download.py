@@ -21,6 +21,25 @@ def create_bat_file(links):
         bat_content += f'start {link}\n'
     return bat_content
 
+# Funkcija, lai izveidotu HTML kodu, kas automātiski atver visas saites
+def create_open_links_html(links):
+    html_content = "<html><body>"
+    for link in links:
+        html_content += f'<a href="{link}" target="_blank">{link}</a><br>'
+    html_content += """
+    <script>
+    function openAllLinks() {
+        var links = document.getElementsByTagName('a');
+        for (var i = 0; i < links.length; i++) {
+            window.open(links[i].href);
+        }
+    }
+    </script>
+    <button onclick="openAllLinks()">Atvērt visas saites</button>
+    </body></html>
+    """
+    return html_content
+
 # Google Drive faila ID un ZIP faila atrašanās vieta
 file_id = "1Xo7gVZ2WOm6yWv6o0-jCs_OsVQZQdffQ"
 output_zip_path = "LASMAP.zip"
@@ -101,10 +120,9 @@ try:
                     else:
                         st.success(f"Atrasti {matched_polygons} poligoni, kas pārklājas.")
 
-                        # Parādīt visas saites, izmantojot klikšķināmas saites (markdown)
-                        st.write("Atrasto saišu saraksts:")
-                        for link in links:
-                            st.markdown(f"[Klikšķini šeit, lai atvērtu saiti]({link})")
+                        # Parādīt visas saites un pievienot pogu, lai tās visas atvērtu ar klikšķi
+                        html_content = create_open_links_html(links)
+                        st.components.v1.html(html_content, height=300)
 
                         # Izveidot BAT failu un piedāvāt to lejupielādei
                         bat_content = create_bat_file(links)
