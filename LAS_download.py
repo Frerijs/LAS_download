@@ -6,11 +6,10 @@ import shutil
 from tempfile import TemporaryDirectory
 
 # Funkcija, lai lejupielādētu failu no Google Drive, izmantojot gdown
-def download_from_google_drive(file_id, output_filename, progress_bar):
+def download_from_google_drive(file_id, output_filename):
     try:
         download_url = f"https://drive.google.com/uc?id={file_id}"
         gdown.download(download_url, output_filename, quiet=False)
-        progress_bar.progress(1.0)  # Kad lejupielāde ir pabeigta, iestata progresu uz 100%
         return True
     except Exception as e:
         st.error(f"Kļūda lejupielādējot failu: {e}")
@@ -18,7 +17,6 @@ def download_from_google_drive(file_id, output_filename, progress_bar):
 
 # Funkcija, lai izveidotu HTML kodu, kas atver visas saites vienlaikus ar aizkavi
 def create_open_all_links_button(links):
-    # HTML ar JS, kas rada pogu un ar JS palīdzību atver visas saites ar 0.5 sek. aizkavi
     html_content = """
     <html>
     <head>
@@ -49,7 +47,7 @@ def create_open_all_links_button(links):
             (function(i) {
                 setTimeout(function() {
                     window.open(links[i].href, '_blank');
-                }, i * 500); // 0.5 sekunde starp katru saiti
+                }, i * 500); 
             })(i);
         }
     }
@@ -66,34 +64,37 @@ output_zip_path = "LASMAP.zip"
 # Jaunais virsraksts
 st.write("Lejupielādē LAS datu karšu lapas...")
 
-# Progresjosla, kas specifiski attiecas tikai uz lejupielādi
-download_progress_bar = st.progress(0)
+# Kopīga progresjosla
+progress_bar = st.progress(0)
+progress_percentage = 0.0
 
 # Lejupielādes process
-if download_from_google_drive(file_id, output_zip_path, download_progress_bar):
+if download_from_google_drive(file_id, output_zip_path):
+    progress_percentage += 0.33  # Palielinām progresu par 33% pēc lejupielādes
+    progress_bar.progress(progress_percentage)
     st.success("Fails veiksmīgi lejupielādēts!")
-    
+
     # Izveido pagaidu direktoriju ZIP faila izsaiņošanai
     extracted_folder = "LASMAP_extracted"
     if os.path.exists(extracted_folder):
         shutil.rmtree(extracted_folder)  # Dzēš, ja jau eksistē
     os.makedirs(extracted_folder, exist_ok=True)
 
-    # Progresjosla ZIP faila izsaiņošanai
-    extract_progress_bar = st.progress(0)
+    # Izsaiņo ZIP failu
     try:
         shutil.unpack_archive(output_zip_path, extracted_folder)
-        extract_progress_bar.progress(1.0)
+        progress_percentage += 0.33  # Palielinām progresu par 33% pēc izsaiņošanas
+        progress_bar.progress(progress_percentage)
         st.success("ZIP fails veiksmīgi izsaiņots!")
     except Exception as e:
         st.error(f"Kļūda izsaiņojot ZIP failu: {e}")
     
     # Ielādē SHP failu
-    shp_load_progress_bar = st.progress(0)
     try:
         shp_file_path = os.path.join(extracted_folder, 'LASMAP.shp')
         gdf = gpd.read_file(shp_file_path)
-        shp_load_progress_bar.progress(1.0)
+        progress_percentage += 0.34  # Pabeidzam progresu pēc SHP faila ielādes
+        progress_bar.progress(progress_percentage)
         st.success("SHP fails veiksmīgi ielādēts!")
     except Exception as e:
         st.error(f"Kļūda SHP faila ielādē: {e}")
@@ -106,15 +107,11 @@ if download_from_google_drive(file_id, output_zip_path, download_progress_bar):
 
         if start_button:
             with TemporaryDirectory() as temp_dir:
-                # Progresjosla SHP failu augšupielādei
-                upload_progress_bar = st.progress(0)
-                
                 # Saglabāt visus augšupielādētos failus pagaidu mapē
-                for idx, uploaded_file in enumerate(uploaded_shp):
+                for uploaded_file in uploaded_shp:
                     output_path = os.path.join(temp_dir, uploaded_file.name)
                     with open(output_path, 'wb') as f:
                         f.write(uploaded_file.getbuffer())
-                    upload_progress_bar.progress((idx + 1) / len(uploaded_shp))  # Atjaunot progresjoslu
 
                 # Ielādē kontūras SHP failu
                 shp_file_path = [f.name for f in uploaded_shp if f.name.endswith('.shp')][0]
@@ -128,22 +125,13 @@ if download_from_google_drive(file_id, output_zip_path, download_progress_bar):
                     matched_polygons = 0  # Skaitīt pārklājušos poligonus
                     links = []  # Saglabāt saites
 
-                    # Progresjoslas izveide procesiem
-                    process_progress_bar = st.progress(0)
-                    progress_percentage = 0
-
                     for index, row in gdf.iterrows():
                         if 'link' in row and row['link']:  # Pārbaudīt, vai ir "link" atribūts
                             polygon = row.geometry
-                            # Pārbaudīt pārklāšanos ar kontūru faila ģeometriju
                             if contour_gdf.intersects(polygon).any():
                                 matched_polygons += 1
                                 link = row['link']
                                 links.append(link)  # Saglabāt saiti sarakstā
-                            
-                            # Atjauno progresjoslu
-                            progress_percentage = (index + 1) / total_polygons
-                            process_progress_bar.progress(progress_percentage)
 
                     if matched_polygons == 0:
                         st.warning("Neviens poligons nepārklājās ar kontūras failu.")
