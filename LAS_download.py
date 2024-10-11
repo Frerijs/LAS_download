@@ -89,13 +89,12 @@ def login_screen():
     username = st.text_input("Lietotājvārds")
     password = st.text_input("Parole", type="password")
     
-    login_button = st.button("Pieslēgties")
-
-    if login_button:
+    if st.button("Pieslēgties") or st.session_state.logged_in:  # Turpina, ja pieteicies
         users = get_user_data()
-        if authenticate(username, password, users):
+        if authenticate(username, password, users) or st.session_state.logged_in:
             st.session_state.logged_in = True
             st.success("Veiksmīgi pieteicies!")
+            main_app()  # Automātiski pārslēdzas uz galveno aplikāciju
         else:
             st.error("Nepareizs lietotājvārds vai parole.")
 
