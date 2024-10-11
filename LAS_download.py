@@ -3,7 +3,6 @@ import geopandas as gpd
 import gdown
 import os
 import shutil
-import webbrowser
 from tempfile import TemporaryDirectory
 
 # Funkcija, lai lejupielādētu failu no Google Drive, izmantojot gdown
@@ -23,7 +22,7 @@ def create_bat_file(links):
     return bat_content
 
 # Google Drive faila ID un ZIP faila atrašanās vieta
-file_id = "1Xo7gVZ2WOm6yWv6o0-jCs_OsVQZQdffQ"  # Pārliecinies, ka šis ID ir pareizs
+file_id = "1Xo7gVZ2WOm6yWv6o0-jCs_OsVQZQdffQ"
 output_zip_path = "LASMAP.zip"
 
 # Lejupielādē ZIP failu no Google Drive
@@ -107,9 +106,9 @@ try:
                         bat_content = create_bat_file(links)
                         st.download_button(label="Lejupielādēt BAT failu", data=bat_content, file_name="open_links.bat", mime="application/octet-stream")
                         
-                        # Automātiski atvērt visus linkus pārlūkā
+                        # Piedāvāt lietotājam saites, lai manuāli atvērtu tās
                         for link in links:
-                            webbrowser.open(link)
+                            st.markdown(f"[Atvērt saiti]({link})")
                         
                 except Exception as e:
                     st.error(f"Kļūda, ielādējot kontūras SHP failu: {e}")
