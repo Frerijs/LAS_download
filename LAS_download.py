@@ -89,17 +89,15 @@ def login_screen():
         st.title("Pieteikšanās")
         
         with st.form("login_form", clear_on_submit=True):
-            username = st.text_input("Lietotājvārds")
-            password = st.text_input("Parole", type="password")
+            username = st.text_input("Lietotājvārds", on_change=lambda: st.session_state.get('username', username))
+            password = st.text_input("Parole", type="password", on_change=lambda: st.session_state.get('password', password))
             submit_button = st.form_submit_button("Pieslēgties")
         
         if submit_button:  # vai nospiests Enter
             users = get_user_data()
             if authenticate(username, password, users):
                 st.session_state.logged_in = True  # Pieslēgts
-                # Neslēp login logu ar rerun, bet pāriet uz aplikāciju
-                st.success("Veiksmīgi pieteicies!")
-                show_app()
+                st.experimental_rerun()  # Pārlādē lapu, lai pārietu uz galveno saturu
             else:
                 st.error("Nepareizs lietotājvārds vai parole.")
 
