@@ -17,7 +17,26 @@ def download_from_google_drive(file_id, output_filename):
 # Funkcija, lai izveidotu HTML kodu, kas atver visas saites vienlaikus ar aizkavi
 def create_open_all_links_button(links):
     # HTML ar JS, kas rada pogu un ar JS palīdzību atver visas saites ar 0.5 sek. aizkavi
-    html_content = "<html><body>"
+    html_content = """
+    <html>
+    <head>
+    <style>
+    .button {
+        display: inline-block;
+        background-color: #f44336;
+        color: white;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        font-size: 16px;
+        margin: 4px 2px;
+        cursor: pointer;
+        border-radius: 4px;
+    }
+    </style>
+    </head>
+    <body>
+    """
     for link in links:
         html_content += f'<a href="{link}" target="_blank">{link}</a><br>'
     html_content += """
@@ -33,7 +52,7 @@ def create_open_all_links_button(links):
         }
     }
     </script>
-    <button onclick="openAllLinks()">Atvērt visas saites</button>
+    <button class="button" onclick="openAllLinks()">Lejuplādēt visus datus</button>
     </body></html>
     """
     return html_content
