@@ -91,7 +91,6 @@ try:
                                 matched_polygons += 1
                                 link = row['link']
                                 links.append(link)  # Saglabāt saiti sarakstā
-                                st.write(f"Atrasta saite: {link}")
                             
                             # Atjauno progresjoslu
                             progress_percentage = (index + 1) / total_polygons
@@ -101,14 +100,15 @@ try:
                         st.warning("Neviens poligons nepārklājās ar kontūras failu.")
                     else:
                         st.success(f"Atrasti {matched_polygons} poligoni, kas pārklājas.")
-                        
+
+                        # Parādīt visas saites, izmantojot klikšķināmas saites (markdown)
+                        st.write("Atrasto saišu saraksts:")
+                        for link in links:
+                            st.markdown(f"[Klikšķini šeit, lai atvērtu saiti]({link})")
+
                         # Izveidot BAT failu un piedāvāt to lejupielādei
                         bat_content = create_bat_file(links)
                         st.download_button(label="Lejupielādēt BAT failu", data=bat_content, file_name="open_links.bat", mime="application/octet-stream")
-                        
-                        # Piedāvāt lietotājam saites, lai manuāli atvērtu tās
-                        for link in links:
-                            st.markdown(f"[Atvērt saiti]({link})")
                         
                 except Exception as e:
                     st.error(f"Kļūda, ielādējot kontūras SHP failu: {e}")
