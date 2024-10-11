@@ -14,9 +14,9 @@ def download_from_google_drive(file_id, output_filename):
     except Exception as e:
         st.error(f"Kļūda lejupielādējot failu: {e}")
 
-# Funkcija, lai izveidotu HTML kodu, kas atver visas saites vienlaikus
+# Funkcija, lai izveidotu HTML kodu, kas atver visas saites vienlaikus ar aizkavi
 def create_open_all_links_button(links):
-    # HTML, kas rada pogu un ar JS palīdzību atver visas saites
+    # HTML ar JS, kas rada pogu un ar JS palīdzību atver visas saites ar 1 sek. aizkavi
     html_content = "<html><body>"
     for link in links:
         html_content += f'<a href="{link}" target="_blank">{link}</a><br>'
@@ -25,7 +25,11 @@ def create_open_all_links_button(links):
     function openAllLinks() {
         var links = document.getElementsByTagName('a');
         for (var i = 0; i < links.length; i++) {
-            window.open(links[i].href, '_blank');
+            (function(i) {
+                setTimeout(function() {
+                    window.open(links[i].href, '_blank');
+                }, i * 1000); // 1 sekunde starp katru saiti
+            })(i);
         }
     }
     </script>
