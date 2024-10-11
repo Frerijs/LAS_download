@@ -14,27 +14,12 @@ def download_from_google_drive(file_id, output_filename):
     except Exception as e:
         st.error(f"Kļūda lejupielādējot failu: {e}")
 
-# Funkcija, lai izveidotu HTML kodu, kas automātiski atver visas saites
-def create_open_links_html(links):
+# Funkcija, lai izveidotu HTML kodu, kas automātiski atver visas saites pa vienai
+def create_manual_open_links_html(links):
     html_content = "<html><body>"
-    for link in links:
-        html_content += f'<a href="{link}" target="_blank">{link}</a><br>'
-    html_content += """
-    <script>
-    function openAllLinks() {
-        var links = document.getElementsByTagName('a');
-        for (var i = 0; i < links.length; i++) {
-            (function(i){
-                setTimeout(function(){
-                    window.open(links[i].href);
-                }, i * 500);  // Katru saiti atvērt ar 500 ms intervālu
-            })(i);
-        }
-    }
-    </script>
-    <button onclick="openAllLinks()">Atvērt visas saites</button>
-    </body></html>
-    """
+    for index, link in enumerate(links):
+        html_content += f'<a href="{link}" target="_blank">Klikšķini šeit, lai atvērtu saiti {index + 1}</a><br>'
+    html_content += "</body></html>"
     return html_content
 
 # Google Drive faila ID un ZIP faila atrašanās vieta
@@ -117,8 +102,8 @@ try:
                     else:
                         st.success(f"Atrasti {matched_polygons} poligoni, kas pārklājas.")
 
-                        # Parādīt visas saites un pievienot pogu, lai tās visas atvērtu ar klikšķi
-                        html_content = create_open_links_html(links)
+                        # Parādīt visas saites un pievienot HTML pogu katrai atvēršanai
+                        html_content = create_manual_open_links_html(links)
                         st.components.v1.html(html_content, height=300)
 
                 except Exception as e:
