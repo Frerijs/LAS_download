@@ -35,7 +35,6 @@ def download_from_google_drive(file_id, output_filename):
 
 # Funkcija, lai izveidotu HTML kodu, kas atver visas saites vienlaikus ar aizkavi
 def create_open_all_links_button(links):
-    # HTML ar JS, kas rada pogu un ar JS palīdzību atver visas saites ar 0.5 sek. aizkavi
     html_content = """
     <html>
     <head>
@@ -66,7 +65,7 @@ def create_open_all_links_button(links):
             (function(i) {
                 setTimeout(function() {
                     window.open(links[i].href, '_blank');
-                }, i * 500); // 0.5 sekunde starp katru saiti
+                }, i * 500); 
             })(i);
         }
     }
@@ -80,7 +79,7 @@ def create_open_all_links_button(links):
 file_id = "1Xo7gVZ2WOm6yWv6o0-jCs_OsVQZQdffQ"
 output_zip_path = "LASMAP.zip"
 
-# Inicializē sesijas stāvokli, ja nav
+# Inicializē sesijas stāvokli
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 
@@ -89,12 +88,14 @@ def login_screen():
     st.title("Pieteikšanās")
     username = st.text_input("Lietotājvārds")
     password = st.text_input("Parole", type="password")
+    
+    login_button = st.button("Pieslēgties")
 
-    if st.button("Pieslēgties"):
+    if login_button:
         users = get_user_data()
         if authenticate(username, password, users):
             st.session_state.logged_in = True
-            st.experimental_rerun()  # Automātiski pārstartē lietotni, kad pieslēdzas
+            st.success("Veiksmīgi pieteicies!")
         else:
             st.error("Nepareizs lietotājvārds vai parole.")
 
@@ -110,7 +111,6 @@ def main_app():
     st.write("Lejupielādē LAS datu karšu lapas...")
 
     try:
-        # Lejupielādē ZIP failu no Google Drive
         if download_from_google_drive(file_id, output_zip_path):
             progress_percentage += 0.3
             progress_bar.progress(progress_percentage)
@@ -118,10 +118,9 @@ def main_app():
             # Izveido pagaidu direktoriju ZIP faila izsaiņošanai
             extracted_folder = "LASMAP_extracted"
             if os.path.exists(extracted_folder):
-                shutil.rmtree(extracted_folder)  # Dzēš, ja jau eksistē
+                shutil.rmtree(extracted_folder)
             os.makedirs(extracted_folder, exist_ok=True)
 
-            # Izsaiņo ZIP failu
             try:
                 shutil.unpack_archive(output_zip_path, extracted_folder)
                 progress_percentage += 0.3
@@ -129,7 +128,6 @@ def main_app():
             except Exception as e:
                 st.error(f"Kļūda izsaiņojot ZIP failu: {e}")
 
-            # Ielādē SHP failu
             try:
                 shp_file_path = os.path.join(extracted_folder, 'LASMAP.shp')
                 gdf = gpd.read_file(shp_file_path)
@@ -138,7 +136,6 @@ def main_app():
             except Exception as e:
                 st.error(f"Kļūda SHP faila ielādē: {e}")
 
-            # Lietotājam piedāvā augšupielādēt SHP komponentes failus (SHP, SHX, DBF)
             uploaded_shp = st.file_uploader("Augšupielādē savu kontūras SHP failu komponentes (SHP, SHX, DBF)", type=["shp", "shx", "dbf"], accept_multiple_files=True)
 
             if uploaded_shp and len(uploaded_shp) == 3:
@@ -146,38 +143,30 @@ def main_app():
 
                 if start_button:
                     with TemporaryDirectory() as temp_dir:
-                        # Saglabāt visus augšupielādētos failus pagaidu mapē
                         for uploaded_file in uploaded_shp:
                             output_path = os.path.join(temp_dir, uploaded_file.name)
                             with open(output_path, 'wb') as f:
                                 f.write(uploaded_file.getbuffer())
 
-                        # Ielādē kontūras SHP failu
                         shp_file_path = [f.name for f in uploaded_shp if f.name.endswith('.shp')][0]
                         shp_file_path = os.path.join(temp_dir, shp_file_path)
 
                         try:
                             contour_gdf = gpd.read_file(shp_file_path)
-
-                            # Pārbaudīt, vai kontūras ģeometrija pārklājas ar poligoniem no LASMAP
                             total_polygons = len(gdf)
-                            matched_polygons = 0  # Skaitīt pārklājušos poligonus
-                            links = []  # Saglabāt saites
+                            matched_polygons = 0
+                            links = []
 
-                            # Progresjoslas izveide
                             progress_bar = st.progress(0)
                             progress_percentage = 0
 
                             for index, row in gdf.iterrows():
-                                if 'link' in row and row['link']:  # Pārbaudīt, vai ir "link" atribūts
+                                if 'link' in row and row['link']:
                                     polygon = row.geometry
-                                    # Pārbaudīt pārklāšanos ar kontūru faila ģeometriju
                                     if contour_gdf.intersects(polygon).any():
                                         matched_polygons += 1
                                         link = row['link']
-                                        links.append(link)  # Saglabāt saiti sarakstā
-
-                                        # Atjauno progresjoslu
+                                        links.append(link)
                                         progress_percentage = (index + 1) / total_polygons
                                         progress_bar.progress(progress_percentage)
 
@@ -185,11 +174,7 @@ def main_app():
                                 st.warning("Neviens poligons nepārklājās ar kontūras failu.")
                             else:
                                 st.success(f"Atrasti {matched_polygons} poligoni, kas pārklājas.")
-
-                                # Parādīt brīdinājuma tekstu par uznirstošo logu bloķētāju
                                 st.warning("Lūdzu, izslēdziet uznirstošo logu bloķētāju, lai lejupielādētu visus datus ar vienu klikšķi.")
-
-                                # Parādīt visas saites un pievienot HTML pogu, lai tās visas atvērtu vienlaicīgi ar aizkavi
                                 html_content = create_open_all_links_button(links)
                                 st.components.v1.html(html_content, height=300)
 
