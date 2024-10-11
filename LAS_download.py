@@ -14,13 +14,6 @@ def download_from_google_drive(file_id, output_filename):
     except Exception as e:
         st.error(f"Kļūda lejupielādējot failu: {e}")
 
-# Funkcija, lai izveidotu *.bat failu ar atrastajām saitēm
-def create_bat_file(links):
-    bat_content = ""
-    for link in links:
-        bat_content += f'start {link}\n'
-    return bat_content
-
 # Funkcija, lai izveidotu HTML kodu, kas automātiski atver visas saites
 def create_open_links_html(links):
     html_content = "<html><body>"
@@ -31,7 +24,11 @@ def create_open_links_html(links):
     function openAllLinks() {
         var links = document.getElementsByTagName('a');
         for (var i = 0; i < links.length; i++) {
-            window.open(links[i].href);
+            (function(i){
+                setTimeout(function(){
+                    window.open(links[i].href);
+                }, i * 500);  // Katru saiti atvērt ar 500 ms intervālu
+            })(i);
         }
     }
     </script>
@@ -124,10 +121,6 @@ try:
                         html_content = create_open_links_html(links)
                         st.components.v1.html(html_content, height=300)
 
-                        # Izveidot BAT failu un piedāvāt to lejupielādei
-                        bat_content = create_bat_file(links)
-                        st.download_button(label="Lejupielādēt BAT failu", data=bat_content, file_name="open_links.bat", mime="application/octet-stream")
-                        
                 except Exception as e:
                     st.error(f"Kļūda, ielādējot kontūras SHP failu: {e}")
     else:
