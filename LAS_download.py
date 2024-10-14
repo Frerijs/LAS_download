@@ -10,16 +10,25 @@ from tempfile import TemporaryDirectory
 google_sheet_csv_url = "https://docs.google.com/spreadsheets/d/1u-myVB6WYK0Zp18g7YDZt59AdrmHB0nA4rvQehYbcjg/export?format=csv"
 
 # Funkcija, lai iegūtu lietotāja datus no Google Sheets
+@st.cache_data
 def get_user_data():
-    df = pd.read_csv(google_sheet_csv_url)
-    df.columns = df.columns.str.strip()  # Noņem atstarpes kolonnu nosaukumiem
-    return df
+    try:
+        df = pd.read_csv(google_sheet_csv_url)
+        df.columns = df.columns.str.strip().str.lower()  # Noņem atstarpes un pārvērš uz maziem burtiem
+        return df
+    except Exception as e:
+        st.error(f"Kļūda iegūstot lietotāju datus: {e}")
+        return pd.DataFrame()
 
 # Funkcija, lai pārbaudītu lietotāja pieteikšanos
 def authenticate(username, password, users_df):
-    user_row = users_df[users_df['username'] == username]
+    if 'username' not in users_df.columns or 'password' not in users_df.columns:
+        st.error("Google Sheets datiem trūkst 'username' vai 'password' kolonnas.")
+        return False
+    user_row = users_df[users_df['username'].str.lower() == username.lower()]
     if not user_row.empty:
-        if user_row['password'].values[0] == password:
+        stored_password = user_row['password'].values[0]
+        if stored_password.strip() == password:
             return True
     return False
 
@@ -41,7 +50,7 @@ def create_open_all_links_button(links):
     <style>
     .button {
         display: inline-block;
-        background-color: #f44336;
+        background-color: #4CAF50;
         color: white;
         padding: 10px 20px;
         text-align: center;
@@ -70,7 +79,7 @@ def create_open_all_links_button(links):
         }
     }
     </script>
-    <button class="button" onclick="openAllLinks()">Lejuplādēt visus datus</button>
+    <button class="button" onclick="openAllLinks()">Lejupielādēt visus datus</button>
     </body></html>
     """
     return html_content
@@ -82,25 +91,31 @@ output_zip_path = "LASMAP.zip"
 # Inicializē sesijas stāvokli
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
+if 'username' not in st.session_state:
+    st.session_state.username = ''
 
 # Funkcija, lai pārvaldītu pieteikšanās procesu
 def login_screen():
     st.title("Pieteikšanās")
-    username = st.text_input("Lietotājvārds")
-    password = st.text_input("Parole", type="password")
+    username = st.text_input("Lietotājvārds").strip()
+    password = st.text_input("Parole", type="password").strip()
     
-    if st.button("Pieslēgties") or st.session_state.logged_in:  # Turpina, ja pieteicies
+    if st.button("Pieslēgties"):
+        if username == "" or password == "":
+            st.error("Lūdzu, ievadiet gan lietotājvārdu, gan paroli.")
+            return
         users = get_user_data()
-        if authenticate(username, password, users) or st.session_state.logged_in:
+        if authenticate(username, password, users):
             st.session_state.logged_in = True
+            st.session_state.username = username
             st.success("Veiksmīgi pieteicies!")
-            main_app()  # Automātiski pārslēdzas uz galveno aplikāciju
+            # Pāriet uz galveno aplikāciju
         else:
             st.error("Nepareizs lietotājvārds vai parole.")
 
 # Funkcija, lai attēlotu galveno aplikācijas saturu
 def main_app():
-    st.success("Veiksmīgi pieteicies!")
+    st.success(f"Veiksmīgi pieteicies, {st.session_state.username}!")
     
     # Progresjosla un lejupielādes process
     progress_bar = st.progress(0)
@@ -147,8 +162,11 @@ def main_app():
                             with open(output_path, 'wb') as f:
                                 f.write(uploaded_file.getbuffer())
 
-                        shp_file_path = [f.name for f in uploaded_shp if f.name.endswith('.shp')][0]
-                        shp_file_path = os.path.join(temp_dir, shp_file_path)
+                        shp_file_name = [f.name for f in uploaded_shp if f.name.endswith('.shp')]
+                        if not shp_file_name:
+                            st.error("SHP fails nav atrasts.")
+                            return
+                        shp_file_path = os.path.join(temp_dir, shp_file_name[0])
 
                         try:
                             contour_gdf = gpd.read_file(shp_file_path)
@@ -160,7 +178,7 @@ def main_app():
                             progress_percentage = 0
 
                             for index, row in gdf.iterrows():
-                                if 'link' in row and row['link']:
+                                if 'link' in row and pd.notna(row['link']):
                                     polygon = row.geometry
                                     if contour_gdf.intersects(polygon).any():
                                         matched_polygons += 1
