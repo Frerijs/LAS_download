@@ -192,8 +192,20 @@ def main_app():
                                 with open(output_path, 'wb') as f:
                                     f.write(uploaded_file.getbuffer())
 
-                            # Ielādē kontūras SHP failu
-                            shp_file_path = os.path.join(temp_dir, 'uploaded.shp')
+                            # Identificēt un ielādēt kontūras SHP failu
+                            shp_files = [f for f in uploaded_shp if f.name.lower().endswith('.shp')]
+                            if not shp_files:
+                                st.error("Nav atrasts SHP fails augšupielādētajos failos.")
+                                return
+                            
+                            # Pieņemsim, ka ir tikai viens SHP fails
+                            shp_file = shp_files[0]
+                            shp_file_path = os.path.join(temp_dir, shp_file.name)
+                            
+                            if not os.path.exists(shp_file_path):
+                                st.error(f"SHP fails nav atrasts: {shp_file_path}")
+                                return
+
                             try:
                                 contour_gdf = gpd.read_file(shp_file_path)
                             except Exception as e:
