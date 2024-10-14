@@ -98,8 +98,10 @@ if 'username' not in st.session_state:
 def login_screen():
     st.title("Pieteikšanās")
     
-    # Izveido veidlapu
-    with st.form(key='login_form'):
+    # Izveido vietu, kurā parādīsies veidlapa
+    login_placeholder = st.empty()
+    
+    with login_placeholder.form(key='login_form'):
         username = st.text_input("Lietotājvārds").strip()
         password = st.text_input("Parole", type="password").strip()
         submit_button = st.form_submit_button(label="Pieslēgties")
@@ -113,8 +115,10 @@ def login_screen():
             st.session_state.logged_in = True
             st.session_state.username = username
             st.success("Veiksmīgi pieteicies!")
+            # Notīra pieteikšanās formu
+            login_placeholder.empty()
             # Pāriet uz galveno aplikāciju
-            st.experimental_rerun()
+            main_app()
         else:
             st.error("Nepareizs lietotājvārds vai parole.")
 
@@ -210,7 +214,7 @@ def main_app():
         st.error(f"Kļūda: {e}")
 
 # Ja pieteicies, rāda galveno aplikāciju, ja nē, rāda pieteikšanās ekrānu
-if not st.session_state.logged_in:
-    login_screen()
-else:
+if st.session_state.logged_in:
     main_app()
+else:
+    login_screen()
