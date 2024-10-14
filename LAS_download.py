@@ -97,10 +97,14 @@ if 'username' not in st.session_state:
 # Funkcija, lai pārvaldītu pieteikšanās procesu
 def login_screen():
     st.title("Pieteikšanās")
-    username = st.text_input("Lietotājvārds").strip()
-    password = st.text_input("Parole", type="password").strip()
     
-    if st.button("Pieslēgties"):
+    # Izveido veidlapu
+    with st.form(key='login_form'):
+        username = st.text_input("Lietotājvārds").strip()
+        password = st.text_input("Parole", type="password").strip()
+        submit_button = st.form_submit_button(label="Pieslēgties")
+    
+    if submit_button:
         if username == "" or password == "":
             st.error("Lūdzu, ievadiet gan lietotājvārdu, gan paroli.")
             return
@@ -110,13 +114,14 @@ def login_screen():
             st.session_state.username = username
             st.success("Veiksmīgi pieteicies!")
             # Pāriet uz galveno aplikāciju
+            st.experimental_rerun()
         else:
             st.error("Nepareizs lietotājvārds vai parole.")
 
 # Funkcija, lai attēlotu galveno aplikācijas saturu
 def main_app():
     st.success(f"Veiksmīgi pieteicies, {st.session_state.username}!")
-    
+
     # Progresjosla un lejupielādes process
     progress_bar = st.progress(0)
     progress_percentage = 0
@@ -184,8 +189,8 @@ def main_app():
                                         matched_polygons += 1
                                         link = row['link']
                                         links.append(link)
-                                        progress_percentage = (index + 1) / total_polygons
-                                        progress_bar.progress(progress_percentage)
+                                progress_percentage = (index + 1) / total_polygons
+                                progress_bar.progress(progress_percentage)
 
                             if matched_polygons == 0:
                                 st.warning("Neviens poligons nepārklājās ar kontūras failu.")
