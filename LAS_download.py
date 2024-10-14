@@ -85,25 +85,21 @@ if 'logged_in' not in st.session_state:
 
 # Funkcija, lai pārvaldītu pieteikšanās procesu
 def login_screen():
-    if not st.session_state.logged_in:  # Tikai ja nav pieslēdzies
-        st.title("Pieteikšanās")
-        
-        # Veidlapa, kur lietotājs var ievadīt savu lietotājvārdu un paroli
-        with st.form("login_form", clear_on_submit=True):
-            username = st.text_input("Lietotājvārds")
-            password = st.text_input("Parole", type="password")
-            submit_button = st.form_submit_button("Pieslēgties")
-        
-        if submit_button:
-            users = get_user_data()
-            if authenticate(username, password, users):
-                st.session_state.logged_in = True  # Pieslēgts
-                st.experimental_rerun()  # Pārlādē lapu, lai pārietu uz galveno saturu
-            else:
-                st.error("Nepareizs lietotājvārds vai parole.")
+    st.title("Pieteikšanās")
+    username = st.text_input("Lietotājvārds")
+    password = st.text_input("Parole", type="password")
+    
+    if st.button("Pieslēgties") or st.session_state.logged_in:  # Turpina, ja pieteicies
+        users = get_user_data()
+        if authenticate(username, password, users) or st.session_state.logged_in:
+            st.session_state.logged_in = True
+            st.success("Veiksmīgi pieteicies!")
+            main_app()  # Automātiski pārslēdzas uz galveno aplikāciju
+        else:
+            st.error("Nepareizs lietotājvārds vai parole.")
 
 # Funkcija, lai attēlotu galveno aplikācijas saturu
-def show_app():
+def main_app():
     st.success("Veiksmīgi pieteicies!")
     
     # Progresjosla un lejupielādes process
@@ -190,8 +186,8 @@ def show_app():
     except Exception as e:
         st.error(f"Kļūda: {e}")
 
-# Rāda galveno aplikāciju, ja pieslēgts, citādi pieteikšanās ekrāns
-if st.session_state.logged_in:
-    show_app()
-else:
+# Ja pieteicies, rāda galveno aplikāciju, ja nē, rāda pieteikšanās ekrānu
+if not st.session_state.logged_in:
     login_screen()
+else:
+    main_app()
