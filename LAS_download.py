@@ -38,7 +38,7 @@ def download_from_google_drive(file_id, output_filename):
         st.error(f"Kļūda lejupielādējot failu: {e}")
         return False
 
-# Funkcija, lai izveidotu HTML kodu, kas atver visas saites vienlaikus ar aizkavi
+# Funkcija, lai izveidotu HTML pogu, kas atver visas saites vienlaikus ar aizkavi
 def create_open_all_links_button(links):
     # HTML ar JS, kas rada pogu un ar JS palīdzību atver visas saites ar 0.5 sek. aizkavi
     html_content = """
@@ -90,6 +90,10 @@ if 'authenticated' not in st.session_state:
     st.session_state.authenticated = False
     st.session_state.username = ''
 
+if 'data_downloaded' not in st.session_state:
+    st.session_state.data_downloaded = False
+    st.session_state.gdf = None
+
 def login():
     st.title("Pieteikšanās")
 
@@ -116,6 +120,8 @@ def login():
 def logout():
     st.session_state.authenticated = False
     st.session_state.username = ''
+    st.session_state.data_downloaded = False
+    st.session_state.gdf = None
     st.success("Jūs esat izlogojies.")
 
 def main_app():
@@ -130,10 +136,6 @@ def main_app():
 
     st.markdown("---")
     st.header("Lejupielādēt LASMAP Datus")
-
-    if 'data_downloaded' not in st.session_state:
-        st.session_state.data_downloaded = False
-        st.session_state.gdf = None
 
     if not st.session_state.data_downloaded:
         if st.button("Lejupielādēt LASMAP ZIP"):
@@ -164,7 +166,6 @@ def main_app():
                         st.success("SHP fails veiksmīgi ielādēts.")
                     except Exception as e:
                         st.error(f"Kļūda SHP faila ielādē: {e}")
-            st.experimental_rerun()
     else:
         st.success("LASMAP dati jau ir lejupielādēti un ielādēti.")
 
